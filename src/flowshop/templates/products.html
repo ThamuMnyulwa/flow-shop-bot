@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Stock</h1>
+<div class="actions" style="margin:0 0 12px"><a class="button" href="/admin/products/new">Add product</a></div>
+<div class="card table-wrap">
+<table>
+  <tr><th>Product</th><th>Price</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Status</th></tr>
+  {% for p in products %}
+  <tr>
+    <td><a href="/admin/products/{{ p.id }}">{{ p.name }}</a><br><span class="small muted">{{ p.code }}{% if p.category %} · {{ p.category.name }}{% endif %}</span></td>
+    <td>{{ p.price_cents|rand }}</td>
+    <td>{{ p.on_hand }}</td>
+    <td>{{ p.reserved }}</td>
+    <td>{% if p.available <= 0 %}<span class="pill bad">0</span>{% elif p.available <= p.low_stock_threshold %}<span class="pill warn">{{ p.available }}</span>{% else %}{{ p.available }}{% endif %}</td>
+    <td><span class="pill {{ 'ok' if p.status.value == 'on_sale' else '' }}">{{ p.status|status }}</span></td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+<p class="small muted">Available is on hand minus reserved. Reserved stock is held for confirmed orders that have not been sent yet.</p>
+{% endblock %}

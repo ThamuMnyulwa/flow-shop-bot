@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf" content="{{ csrf }}">
+  <title>{% block title %}FLOWW shop{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ csrf }}"}'>
+{% if staff %}
+<header class="top">
+  <a class="brand" href="/admin">FLOWW shop</a>
+  <nav>
+    {% set p = request.url.path %}
+    <a href="/admin" class="{{ 'on' if p == '/admin' }}">Today</a>
+    <a href="/admin/orders" class="{{ 'on' if p.startswith('/admin/orders') }}">Orders</a>
+    <a href="/admin/products" class="{{ 'on' if p.startswith('/admin/products') }}">Stock</a>
+    <a href="/inbox" class="{{ 'on' if p.startswith('/inbox') }}">Inbox {% if waiting %}<span class="badge">{{ waiting }}</span>{% endif %}</a>
+    <a href="/admin/notifications" class="{{ 'on' if p.startswith('/admin/notifications') }}">Alerts {% if unread %}<span class="badge">{{ unread }}</span>{% endif %}</a>
+    <a href="/admin/reports" class="{{ 'on' if p.startswith('/admin/reports') }}">Reports</a>
+    <a href="/admin/settings" class="{{ 'on' if p.startswith('/admin/settings') }}">Settings</a>
+    {% if staff.is_admin %}<a href="/admin/staff" class="{{ 'on' if p.startswith('/admin/staff') }}">Staff</a>{% endif %}
+    <a href="/simulator" target="_blank">Simulator</a>
+    <form method="post" action="/admin/logout" class="inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary" style="padding:3px 10px">Sign out</button></form>
+  </nav>
+</header>
+{% if time_travel %}
+<div class="clock">
+  <span>Test clock: <strong>{{ now|local('%a %d %b %H:%M') }}</strong></span>
+  <form method="post" action="/admin/clock"><input type="hidden" name="csrf" value="{{ csrf }}">
+    <button name="hours" value="1">+1 h</button><button name="hours" value="24">+1 day</button>
+    <button name="hours" value="49">+49 h</button><button name="reset" value="true">Reset</button>
+  </form>
+</div>
+{% endif %}
+{% endif %}
+<main>
+  {% if flash %}<div class="flash {{ flash.kind }}">{{ flash.message }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

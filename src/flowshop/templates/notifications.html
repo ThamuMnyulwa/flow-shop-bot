@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Alerts</h1>
+<form method="post" action="/admin/notifications/read"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary">Mark all read</button></form>
+<div class="card" style="margin-top:12px">
+  {% for n in notes %}
+  <p class="{{ '' if n.read else '' }}">{% if not n.read %}<span class="pill warn">new</span> {% endif %}
+    {% if n.link %}<a href="{{ n.link }}">{{ n.text }}</a>{% else %}{{ n.text }}{% endif %}
+    <br><span class="small muted">{{ n.kind|replace('_', ' ') }} · {{ n.created_at|local }}</span></p>
+  {% else %}<p class="muted">No alerts.</p>{% endfor %}
+</div>
+{% endblock %}

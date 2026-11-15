@@ -1,0 +1,3 @@
+{% for m in messages %}
+<div class="bubble {{ m.direction.value }}">{{ m.text }}{% if m.kind in ('buttons', 'list') %}<span class="opts">{% for b in m.payload.get('buttons', []) %}<span>{{ b.title }}</span>{% endfor %}{% for r in m.payload.get('rows', []) %}<span>{{ r.title }}</span>{% endfor %}</span>{% endif %}{% if m.kind in ('image', 'document') %}<em>[{{ m.kind }} sent]</em>{% endif %}<span class="meta">{% if m.sender == 'staff' %}{{ m.staff.name if m.staff else 'staff' }}{% else %}{{ m.sender }}{% endif %}{% if m.kind == 'template' %} · template{% endif %} · {{ m.created_at|local('%d %b %H:%M') }}{% if m.payload.get('error') %} · <span style="color:var(--bad)">not delivered</span>{% endif %}</span></div>
+{% endfor %}

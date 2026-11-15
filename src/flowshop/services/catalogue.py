@@ -22,14 +22,27 @@ def categories_with_products(db: Session) -> list[Category]:
     return list(db.scalars(stmt))
 
 
+STOP_WORDS = {
+    "the", "and", "you", "your", "have", "has", "any", "for", "with", "what", "how", "much", "does", "can", "are",
+    "want", "would", "like", "please", "need", "looking", "some", "this", "that", "there", "stock", "price", "cost",
+    "buy", "order", "sell", "selling", "available", "get", "hello", "thanks",
+}
+
+
 def search(db: Session, text: str, limit: int = 10) -> list[Product]:
-    words = [w for w in re.findall(r"[a-z0-9]+", text.lower()) if len(w) >= 3]
+    """Name matches rank above description matches; filler words are ignored."""
+    words = [w for w in re.findall(r"[a-z0-9]+", text.lower()) if len(w) >= 3 and w not in STOP_WORDS]
     if not words:
         return []
     conditions = [or_(func.lower(Product.name).contains(w), func.lower(Product.description).contains(w))
                   for w in words]
-    stmt = select(Product).where(Product.status.in_(VISIBLE), or_(*conditions)).order_by(Product.name).limit(limit)
-    return list(db.scalars(stmt))
+    candidates = db.scalars(select(Product).where(Product.status.in_(VISIBLE), or_(*conditions))).all()
+
+    def score(p: Product) -> tuple[int, int, str]:
+        name, desc = p.name.lower(), p.description.lower()
+        return (-sum(w in name for w in words), -sum(w in desc for w in words), p.name)
+
+    return sorted(candidates, key=score)[:limit]
 
 
 def by_code(db: Session, text: str) -> Product | None:

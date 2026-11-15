@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Settings</h1>
+<form method="post" action="/admin/settings" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for key, label in labels.items() %}
+    <label for="{{ key }}">{{ label }}{% if key in money %} (rand){% endif %}</label>
+    {% if key in ('bank_details', 'office_address') %}
+      <textarea id="{{ key }}" name="{{ key }}">{{ values[key] }}</textarea>
+    {% elif key in money %}
+      <input id="{{ key }}" name="{{ key }}" value="{{ (values[key] / 100)|round(2) }}" inputmode="decimal">
+    {% else %}
+      <input id="{{ key }}" name="{{ key }}" value="{{ values[key] }}">
+    {% endif %}
+    {% if key == 'collection_code' %}<p class="small muted">One shared code for trusted customers. Change it whenever you need to. Leave it empty to turn collection off. Wrong guesses are limited per phone number.</p>{% endif %}
+  {% endfor %}
+  {% if staff.is_admin %}<div class="actions"><button>Save settings</button></div>{% else %}<p class="muted small">Only an admin can change settings.</p>{% endif %}
+</form>
+<form method="post" action="/admin/staff/{{ staff.id }}/password" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2 style="margin-top:0">Change my password</h2>
+  <input name="password" type="password" minlength="10" autocomplete="new-password" required>
+  <div class="actions"><button class="secondary">Change password</button></div>
+</form>
+{% endblock %}

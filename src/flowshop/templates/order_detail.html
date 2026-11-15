@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ order.reference }} <span class="pill">{{ order.status|status }}</span></h1>
+{% if order.needs_attention %}<div class="flash error">{{ order.attention_reason }}</div>{% endif %}
+<div class="grid">
+<div class="card">
+  <p><strong>{{ order.customer.name or "Customer" }}</strong> · {{ order.customer.wa_id }} · <a href="/inbox/{{ conv.id }}">chat</a></p>
+  <table>
+    {% for i in order.items %}<tr><td>{{ i.name }} × {{ i.quantity }}</td><td>{{ i.line_cents|rand }}</td></tr>{% endfor %}
+    <tr><td>{{ "Delivery" if order.fulfilment.value == "delivery" else "Collection" }}</td><td>{{ order.delivery_fee_cents|rand if order.delivery_fee_cents else "free" }}</td></tr>
+    <tr><th>Total</th><th>{{ order.total_cents|rand }}</th></tr>
+  </table>
+  {% if order.address %}<p class="small"><strong>Deliver to:</strong><br>{{ order.address }}</p>{% endif %}
+  {% if order.dispatch_by %}<p>Send by <strong>{{ order.dispatch_by.strftime('%A %d %B') }}</strong></p>{% endif %}
+  <p class="small muted">Stock {{ "held" if order.stock_reserved else "not held" }}{% if order.created_by_staff_id %} · created by staff{% endif %}</p>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Actions</h2>
+  {% set st = order.status.value %}
+  <div class="actions" style="margin-top:0">
+  {% if st in ('pending_payment', 'proof_received', 'payment_overdue') %}
+    <form method="post" action="/admin/orders/{{ order.id }}/paid" onsubmit="return confirm('Is {{ order.total_cents|rand }} with reference {{ order.reference }} in the bank account?')">
+      <input type="hidden" name="csrf" value="{{ csrf }}"><button>Mark paid</button></form>
+  {% endif %}
+  {% if st == 'paid' and order.fulfilment.value == 'delivery' %}
+    <form method="post" action="/admin/orders/{{ order.id }}/dispatch"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Mark dispatched</button></form>
+  {% endif %}
+  {% if st == 'paid' and order.fulfilment.value == 'collection' %}
+    <form method="post" action="/admin/orders/{{ order.id }}/collect"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Mark collected</button></form>
+  {% endif %}
+  {% if st == 'paid' and not order.stock_reserved %}
+    <form method="post" action="/admin/orders/{{ order.id }}/retry"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary">Try to reserve stock again</button></form>
+  {% endif %}
+  {% if st == 'dispatched' %}
+    <form method="post" action="/admin/orders/{{ order.id }}/deliver"><input type="hidden" name="csrf" value="{{ csrf }}"><button>Mark delivered</button></form>
+  {% endif %}
+  </div>
+  {% if st in ('pending_payment', 'proof_received', 'payment_overdue', 'paid') %}
+  <form method="post" action="/admin/orders/{{ order.id }}/cancel" onsubmit="return confirm('Cancel {{ order.reference }}?')">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="reason">Cancel with reason</label><input id="reason" name="note" placeholder="Reason">
+    <div class="actions"><button class="danger">Cancel order</button></div>
+  </form>
+  {% endif %}
+  {% if order.needs_attention and 'refund' in order.attention_reason.lower() %}
+  <form method="post" action="/admin/orders/{{ order.id }}/refund">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="rf">Record the refund</label><input id="rf" name="note" placeholder="R400 refunded by EFT on 20 Nov" required>
+    <div class="actions"><button>Save refund</button></div>
+  </form>
+  {% endif %}
+  {% if order.refund_note %}<p class="small">Refund: {{ order.refund_note }}</p>{% endif %}
+</div>
+</div>
+
+{% if order.proofs %}
+<h2>Proof of payment</h2>
+<div class="card">
+  {% for p in order.proofs %}<p><a href="/admin/proofs/{{ p.id }}" target="_blank">File {{ loop.index }}</a> · <span class="small muted">{{ p.created_at|local }}</span></p>{% endfor %}
+  <p class="small muted">A screenshot is not proof. Check that the money is in the bank account.</p>
+</div>
+{% endif %}
+
+{% if st in ('dispatched', 'delivered', 'collected') %}
+<h2>Returns</h2>
+<div class="card">
+  {% for r in returns %}<p class="small">{{ r.quantity }} × {{ r.product.name }}: {{ r.reason }} · refund {{ r.refund_cents|rand }} · {{ r.staff.name }}, {{ r.created_at|local }}</p>{% endfor %}
+  <form method="post" action="/admin/orders/{{ order.id }}/returns">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row">
+      <div><label for="rp">Item</label><select id="rp" name="product_id">{% for i in order.items %}<option value="{{ i.product_id }}">{{ i.name }}</option>{% endfor %}</select></div>
+      <div><label for="rq">Quantity</label><input id="rq" name="quantity" type="number" min="1" value="1"></div>
+      <div><label for="rr">Refund (rand)</label><input id="rr" name="refund" inputmode="decimal" required></div>
+    </div>
+    <label for="rs">What was wrong with the product?</label><input id="rs" name="reason" required>
+    <p class="small muted">Returned items are written off and never go back into sellable stock.</p>
+    <div class="actions"><button class="secondary">Record return</button></div>
+  </form>
+</div>
+{% endif %}
+
+<h2>History</h2>
+<div class="card table-wrap">
+<table>
+  {% for e in order.events %}
+  <tr><td class="small">{{ e.created_at|local }}</td><td class="small">{{ e.from_status|replace('_', ' ') if e.from_status else 'new' }} → {{ e.to_status|replace('_', ' ') }}</td>
+    <td class="small">{{ e.staff.name if e.staff else e.actor }}{% if e.note %}: {{ e.note }}{% endif %}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

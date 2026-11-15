@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Orders</h1>
+<div class="tabs">
+  <a href="?status=open" class="{{ 'on' if current == 'open' }}">Open</a>
+  <a href="?status=attention" class="{{ 'on' if current == 'attention' }}">Needs attention</a>
+  {% for s in statuses %}
+  <a href="?status={{ s.value }}" class="{{ 'on' if current == s.value }}">{{ s|status }} ({{ counts.get(s, 0) }})</a>
+  {% endfor %}
+  <a href="?status=all" class="{{ 'on' if current == 'all' }}">All</a>
+</div>
+<div class="card table-wrap">
+<table>
+  <tr><th>Order</th><th>Customer</th><th>Total</th><th>Status</th><th>Confirmed</th></tr>
+  {% for o in orders %}
+  <tr>
+    <td><a href="/admin/orders/{{ o.id }}">{{ o.reference }}</a><br><span class="small muted">{{ o.fulfilment.value }}</span></td>
+    <td>{{ o.customer.name or o.customer.wa_id }}</td>
+    <td>{{ o.total_cents|rand }}</td>
+    <td><span class="pill">{{ o.status|status }}</span>{% if o.needs_attention %} <span class="pill bad">attention</span>{% endif %}</td>
+    <td class="small">{{ o.confirmed_at|local }}</td>
+  </tr>
+  {% else %}<tr><td colspan="5" class="muted">No orders here.</td></tr>{% endfor %}
+</table>
+</div>
+<div class="actions"><a class="button" href="/admin/orders/new">New order for a customer</a></div>
+{% endblock %}

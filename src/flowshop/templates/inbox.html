@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block head %}<meta http-equiv="refresh" content="20">{% endblock %}
+{% block content %}
+<h1>Inbox</h1>
+<div class="card">
+  {% for c in convs %}
+  {% set m = last[c.id] %}
+  <p style="border-bottom:1px solid var(--line);padding-bottom:8px">
+    <a href="/inbox/{{ c.id }}"><strong>{{ c.customer.name or c.customer.wa_id }}</strong></a>
+    {% if c.waiting_since %}<span class="pill bad">waiting since {{ c.waiting_since|local('%H:%M') }}</span>
+    {% elif c.mode.value == 'human' %}<span class="pill warn">with staff</span>
+    {% else %}<span class="pill ok">bot</span>{% endif %}
+    {% if c.handoff_reason and c.waiting_since %}<span class="small muted"> · {{ c.handoff_reason }}</span>{% endif %}
+    <br><span class="small muted">{% if m %}{{ m.sender }}: {{ m.text[:90] }} · {{ m.created_at|local }}{% endif %}</span>
+  </p>
+  {% else %}<p class="muted">No conversations yet.</p>{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat simulator · FLOWW shop</title>
+<style>
+  :root { --wa-bg:#efeae2; --wa-in:#ffffff; --wa-out:#d9fdd3; --wa-head:#008069; --wa-ink:#111b21; --wa-muted:#667781;
+    --wa-link:#027eb5; --wa-line:#e9edef; --page:#d1d7db; }
+  @media (prefers-color-scheme: dark) { :root { --wa-bg:#0b141a; --wa-in:#202c33; --wa-out:#005c4b; --wa-head:#202c33;
+    --wa-ink:#e9edef; --wa-muted:#8696a0; --wa-link:#53bdeb; --wa-line:#2a3942; --page:#111b21; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--page); color:var(--wa-ink); }
+  .wrap { max-width:960px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:12px 16px; }
+  @media (min-width:760px) { .wrap { grid-template-columns:220px minmax(0,1fr); } }
+  .side { background:var(--wa-in); border-radius:10px; padding:10px; font-size:14px; }
+  .side h2 { font-size:14px; margin:4px 0 8px; color:var(--wa-muted); font-weight:500; }
+  .side a { display:block; padding:8px; border-radius:8px; text-decoration:none; color:var(--wa-ink); }
+  .side a.on { background:var(--wa-line); font-weight:600; }
+  .side button, .side input { width:100%; margin-top:6px; padding:7px; border-radius:8px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .phone { display:flex; flex-direction:column; height:calc(100vh - 24px); min-height:480px; border-radius:10px; overflow:hidden; background:var(--wa-bg); }
+  .head { background:var(--wa-head); color:#fff; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+  .head small { opacity:.8; }
+  .msgs { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; }
+  .b { max-width:85%; padding:6px 9px 4px; border-radius:8px; font-size:14.5px; white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px .5px rgba(0,0,0,.13); }
+  .b.in { align-self:flex-end; background:var(--wa-out); }
+  .b.out { align-self:flex-start; background:var(--wa-in); }
+  .b .t { display:block; text-align:right; font-size:11px; color:var(--wa-muted); margin-top:2px; }
+  .b .btns { display:flex; flex-direction:column; margin:6px -9px -4px; border-top:1px solid var(--wa-line); }
+  .b .btns button { background:none; border:0; border-bottom:1px solid var(--wa-line); color:var(--wa-link); padding:9px; font:inherit; cursor:pointer; }
+  .b .btns button:last-child { border-bottom:0; }
+  .b .btns button:disabled { color:var(--wa-muted); cursor:default; }
+  .b.tpl { border-left:3px solid var(--wa-head); }
+  .note { align-self:center; font-size:12px; background:var(--wa-in); color:var(--wa-muted); padding:4px 10px; border-radius:8px; }
+  .bar { display:flex; gap:8px; padding:8px; background:var(--wa-in); align-items:center; }
+  .bar input[type=text] { flex:1; padding:10px 12px; border-radius:20px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .bar button, .bar label { border:0; background:var(--wa-head); color:#fff; border-radius:20px; padding:9px 14px; font:inherit; cursor:pointer; }
+  .bar label { background:var(--wa-line); color:var(--wa-ink); }
+  .sheet { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:flex-end; justify-content:center; }
+  .sheet.open { display:flex; }
+  .sheet .panel { background:var(--wa-in); width:100%; max-width:520px; border-radius:14px 14px 0 0; padding:12px 0; max-height:70vh; overflow-y:auto; }
+  .sheet h3 { margin:0 16px 8px; font-size:16px; }
+  .sheet .row { padding:10px 16px; border-top:1px solid var(--wa-line); cursor:pointer; }
+  .sheet .row small { display:block; color:var(--wa-muted); }
+  .sheet .row:hover { background:var(--wa-bg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="side">
+    <h2>Test customers</h2>
+    {% for wa, name in customers %}<a href="?wa={{ wa }}" class="{{ 'on' if wa == current[0] }}">{{ name }}<br><small>+{{ wa }}</small></a>{% endfor %}
+    <input id="newwa" placeholder="New number, e.g. 27820000009" inputmode="tel">
+    <button onclick="const v=document.getElementById('newwa').value.replace(/\D/g,''); if(v) location='?wa='+v">Add customer</button>
+    <button onclick="resetChat()">Reset this chat</button>
+    <h2 style="margin-top:14px">Try</h2>
+    <small>"hi" · "notebook" · "Hi, I'd like to order [HW-01]" · "talk to a person" · send a photo as proof of payment</small>
+    <h2 style="margin-top:14px"><a href="/admin" style="padding:0">Admin page</a></h2>
+  </aside>
+  <section class="phone">
+    <div class="head"><div><strong>FLOWW</strong><br><small>Simulator · +{{ business }}</small></div><small id="mode"></small></div>
+    <div class="msgs" id="msgs"></div>
+    <form class="bar" id="bar">
+      <label title="Send a photo or PDF">📎<input type="file" id="file" accept="image/jpeg,image/png,application/pdf" hidden></label>
+      <input type="text" id="text" placeholder="Message" autocomplete="off">
+      <button>Send</button>
+    </form>
+  </section>
+</div>
+<div class="sheet" id="sheet" onclick="if(event.target===this)this.classList.remove('open')"><div class="panel" id="panel"></div></div>
+<script>
+const WA = {{ current[0]|tojson }}, NAME = {{ current[1]|tojson }}, CSRF = {{ csrf|tojson }};
+let last = 0;
+const msgs = document.getElementById("msgs");
+
+async function post(url, body) {
+  const opts = { method: "POST", headers: { "X-CSRF-Token": CSRF } };
+  if (body instanceof FormData) opts.body = body;
+  else { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const r = await fetch(url, opts);
+  if (!r.ok) alert((await r.json().catch(() => ({}))).detail || "The service returned an error.");
+  await poll();
+}
+function time(iso) { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function render(m) {
+  const b = el("div", "b " + m.direction + (m.kind === "template" ? " tpl" : ""));
+  if (m.kind === "image" || m.kind === "document") b.append(el("em", null, m.kind === "image" ? "📷 Photo" : "📄 Document"));
+  else b.append(document.createTextNode(m.text));
+  const p = m.payload || {};
+  if (m.direction === "out" && m.kind === "buttons") {
+    const box = el("div", "btns");
+    p.buttons.forEach(btn => { const x = el("button", null, btn.title); x.onclick = () => post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: btn.id, title: btn.title }); box.append(x); });
+    b.append(box);
+  }
+  if (m.direction === "out" && m.kind === "list") {
+    const box = el("div", "btns"), x = el("button", null, "☰ " + p.list_button);
+    x.onclick = () => openList(m.text, p.rows); box.append(x); b.append(box);
+  }
+  const who = m.sender === "staff" ? (m.staff || "staff") + " · " : m.kind === "template" ? "template · " : "";
+  b.append(el("span", "t", who + time(m.time) + (p.error ? " · not delivered" : "")));
+  msgs.append(b);
+}
+function openList(title, rows) {
+  const panel = document.getElementById("panel"); panel.replaceChildren(el("h3", null, title));
+  rows.forEach(r => { const row = el("div", "row", r.title); if (r.description) row.append(el("small", null, r.description));
+    row.onclick = () => { document.getElementById("sheet").classList.remove("open"); post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: r.id, title: r.title, list_reply: true }); };
+    panel.append(row); });
+  document.getElementById("sheet").classList.add("open");
+}
+async function poll() {
+  const r = await fetch(`/simulator/messages?wa_id=${WA}&after=${last}`);
+  if (!r.ok) return;
+  const data = await r.json();
+  document.getElementById("mode").textContent = data.mode === "human" ? "With staff" : "Bot";
+  if (data.messages.length) {
+    data.messages.forEach(render); last = data.messages[data.messages.length - 1].id;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+}
+async function resetChat() { if (confirm("Clear this chat? Orders stay.")) { await post("/simulator/reset", { wa_id: WA, text: "" }); msgs.replaceChildren(); last = 0; } }
+document.getElementById("bar").onsubmit = e => { e.preventDefault(); const t = document.getElementById("text"); if (!t.value.trim()) return; const v = t.value; t.value = ""; post("/simulator/text", { wa_id: WA, name: NAME, text: v }); };
+document.getElementById("file").onchange = e => { const f = e.target.files[0]; if (!f) return; const fd = new FormData(); fd.append("wa_id", WA); fd.append("name", NAME); fd.append("file", f); e.target.value = ""; post("/simulator/file", fd); };
+poll(); setInterval(poll, 2000);
+</script>
+</body>
+</html>
