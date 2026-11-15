@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chat simulator · FLOWW shop</title>
+<style>
+  :root { --wa-bg:#efeae2; --wa-in:#ffffff; --wa-out:#d9fdd3; --wa-head:#008069; --wa-ink:#111b21; --wa-muted:#667781;
+    --wa-link:#027eb5; --wa-line:#e9edef; --page:#d1d7db; }
+  @media (prefers-color-scheme: dark) { :root { --wa-bg:#0b141a; --wa-in:#202c33; --wa-out:#005c4b; --wa-head:#202c33;
+    --wa-ink:#e9edef; --wa-muted:#8696a0; --wa-link:#53bdeb; --wa-line:#2a3942; --page:#111b21; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:17px; background:var(--page); color:var(--wa-ink); }
+  .wrap { max-width:1040px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:12px 16px; }
+  @media (min-width:760px) { .wrap { grid-template-columns:240px minmax(0,1fr); } }
+  .side { background:var(--wa-in); border-radius:10px; padding:12px; font-size:16px; }
+  .side h2 { font-size:15px; margin:4px 0 8px; color:var(--wa-muted); font-weight:500; }
+  .side a { display:block; padding:8px; border-radius:8px; text-decoration:none; color:var(--wa-ink); }
+  .side a.on { background:var(--wa-line); font-weight:600; }
+  .side button, .side input { width:100%; margin-top:8px; padding:10px; border-radius:8px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .phone { display:flex; flex-direction:column; height:calc(100vh - 24px); min-height:480px; border-radius:10px; overflow:hidden; background:var(--wa-bg); }
+  .head { background:var(--wa-head); color:#fff; padding:12px 16px; font-size:18px; display:flex; justify-content:space-between; align-items:center; }
+  .head small { opacity:.8; }
+  .msgs { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .b { max-width:min(78%, 460px); padding:8px 12px 6px; border-radius:10px; font-size:17px; line-height:1.4; white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px .5px rgba(0,0,0,.13); }
+  .b.in { align-self:flex-end; background:var(--wa-out); }
+  .b.out { align-self:flex-start; background:var(--wa-in); }
+  .b .t { display:block; text-align:right; font-size:12.5px; color:var(--wa-muted); margin-top:2px; }
+  .b .btns { display:flex; flex-direction:column; margin:8px -12px -6px; border-top:1px solid var(--wa-line); }
+  .b .btns button { background:none; border:0; border-bottom:1px solid var(--wa-line); color:var(--wa-link); padding:11px; font:inherit; font-weight:500; cursor:pointer; }
+  .b .btns button:last-child { border-bottom:0; }
+  .b .btns button:disabled { color:var(--wa-muted); cursor:default; }
+  .b.tpl { border-left:3px solid var(--wa-head); }
+  .b.wide { max-width:100%; background:none; box-shadow:none; padding:0; }
+  .b.wide > .t { padding-right:4px; }
+  .cards { display:flex; gap:10px; overflow-x:auto; padding:8px 2px 6px; scroll-snap-type:x mandatory; }
+  .card { flex:0 0 230px; background:var(--wa-in); border-radius:10px; overflow:hidden; scroll-snap-align:start;
+    box-shadow:0 1px .5px rgba(0,0,0,.13); display:flex; flex-direction:column; white-space:normal; }
+  .card img { width:100%; aspect-ratio:1/1; object-fit:cover; background:var(--wa-line); display:block; }
+  .card-body { padding:8px 10px; font-size:15px; white-space:pre-wrap; flex:1; }
+  .card button { border:0; border-top:1px solid var(--wa-line); background:none; color:var(--wa-link); padding:11px; font:inherit; font-weight:500; cursor:pointer; }
+  .b .photo { display:block; width:calc(100% + 16px); max-width:none; margin:-4px -8px 8px; border-radius:8px; aspect-ratio:1/1; object-fit:cover; background:var(--wa-line); }
+  .note { align-self:center; font-size:12px; background:var(--wa-in); color:var(--wa-muted); padding:4px 10px; border-radius:8px; }
+  .bar { display:flex; gap:8px; padding:10px; background:var(--wa-in); align-items:center; }
+  .bar input[type=text] { flex:1; padding:12px 16px; border-radius:20px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .bar button, .bar label { border:0; background:var(--wa-head); color:#fff; border-radius:22px; padding:11px 18px; font:inherit; cursor:pointer; }
+  .bar label { background:var(--wa-line); color:var(--wa-ink); }
+  .sheet { position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:16px; }
+  .sheet.open { display:flex; }
+  .sheet .panel { background:var(--wa-in); width:100%; max-width:460px; border-radius:14px; padding:14px 0 6px; max-height:85vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+  .sheet h3 { margin:0 18px 10px; font-size:18px; }
+  .sheet .row { padding:14px 18px; font-size:17px; border-top:1px solid var(--wa-line); cursor:pointer; }
+  .sheet .row small { display:block; color:var(--wa-muted); font-size:15px; margin-top:2px; }
+  .sheet .close { display:block; width:100%; border:0; border-top:1px solid var(--wa-line); background:none; color:var(--wa-link); padding:14px; font:inherit; cursor:pointer; }
+  .sheet .row:hover { background:var(--wa-bg); }
+</style>
+</head>
+<body>
+{% if env != 'production' %}<div style="background:{{ '#5c636a' if env == 'local' else '#3b5bdb' }};color:#fff;text-align:center;font-size:14px;font-weight:600;padding:4px 16px">{{ env|upper }}: test data, not real orders</div>{% endif %}
+<div class="wrap">
+  <aside class="side">
+    <h2>Test customers</h2>
+    {% for wa, name in customers %}<a href="?wa={{ wa }}" class="{{ 'on' if wa == current[0] }}">{{ name }}<br><small>+{{ wa }}</small></a>{% endfor %}
+    <input id="newwa" placeholder="New number, e.g. 27820000009" inputmode="tel">
+    <button onclick="const v=document.getElementById('newwa').value.replace(/\D/g,''); if(v) location='?wa='+v">Add customer</button>
+    <button onclick="resetChat()">Reset this chat</button>
+    <h2 style="margin-top:14px">Try</h2>
+    <small style="font-size:15px">"hi" · "notebook" · "Hi, I'd like to order [HW-01]" · "talk to a person" · send a photo as proof of payment</small>
+    <h2 style="margin-top:14px"><a href="/admin" style="padding:0">Admin page</a></h2>
+  </aside>
+  <section class="phone">
+    <div class="head"><div><strong>FLOWW</strong><br><small>Simulator · +{{ business }}</small></div><small id="mode"></small></div>
+    <div class="msgs" id="msgs"></div>
+    <form class="bar" id="bar">
+      <label title="Send a photo or PDF">📎<input type="file" id="file" accept="image/jpeg,image/png,application/pdf" hidden></label>
+      <input type="text" id="text" placeholder="Message" autocomplete="off">
+      <button>Send</button>
+    </form>
+  </section>
+</div>
+<div class="sheet" id="sheet" onclick="if(event.target===this)this.classList.remove('open')"><div class="panel" id="panel"></div></div>
+<script>
+const WA = {{ current[0]|tojson }}, NAME = {{ current[1]|tojson }}, CSRF = {{ csrf|tojson }};
+let last = 0;
+const msgs = document.getElementById("msgs");
+
+let sending = false;
+async function post(url, body) {
+  if (sending) return;
+  sending = true;
+  try { await send(url, body); } finally { sending = false; }
+}
+async function send(url, body) {
+  const opts = { method: "POST", headers: { "X-CSRF-Token": CSRF } };
+  if (body instanceof FormData) opts.body = body;
+  else { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const r = await fetch(url, opts);
+  if (!r.ok) alert((await r.json().catch(() => ({}))).detail || "The service returned an error.");
+  await poll();
+}
+function time(iso) { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+function render(m) {
+  const b = el("div", "b " + m.direction + (m.kind === "template" ? " tpl" : ""));
+  if (m.payload && m.payload.image_path) {
+    const img = el("img", "photo"); img.src = m.payload.image_path; img.alt = "";
+    img.onload = () => { msgs.scrollTop = msgs.scrollHeight; };
+    b.append(img);
+  }
+  if (m.kind === "image" || m.kind === "document") b.append(el("em", null, m.kind === "image" ? "📷 Photo" : "📄 Document"));
+  else b.append(document.createTextNode(m.text));
+  const p = m.payload || {};
+  if (m.direction === "out" && m.kind === "buttons") {
+    const box = el("div", "btns");
+    p.buttons.forEach(btn => { const x = el("button", null, btn.title); x.onclick = () => post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: btn.id, title: btn.title }); box.append(x); });
+    b.append(box);
+  }
+  if (m.direction === "out" && m.kind === "carousel") {
+    const row = el("div", "cards");
+    (p.cards || []).forEach(card => {
+      const c = el("div", "card");
+      const img = el("img"); img.src = card.image_path; img.alt = ""; c.append(img);
+      c.append(el("div", "card-body", card.body.replace(/\*/g, "")));
+      card.buttons.forEach(btn => { const x = el("button", null, btn.title);
+        x.onclick = () => post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: btn.id, title: btn.title }); c.append(x); });
+      row.append(c);
+    });
+    b.classList.add("wide"); b.append(row);
+  }
+  if (m.direction === "out" && m.kind === "list") {
+    const box = el("div", "btns"), x = el("button", null, "☰ " + p.list_button);
+    x.onclick = () => openList(m.text, p.rows); box.append(x); b.append(box);
+  }
+  const who = m.sender === "staff" ? (m.staff || "staff") + " · " : m.kind === "template" ? "template · " : "";
+  b.append(el("span", "t", who + time(m.time) + (p.error ? " · not delivered" : "")));
+  msgs.append(b);
+}
+function openList(title, rows) {
+  const panel = document.getElementById("panel"); panel.replaceChildren(el("h3", null, title));
+  rows.forEach(r => { const row = el("div", "row", r.title); if (r.description) row.append(el("small", null, r.description));
+    row.onclick = () => { document.getElementById("sheet").classList.remove("open"); post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: r.id, title: r.title, list_reply: true }); };
+    panel.append(row); });
+  const close = el("button", "close", "Close"); close.onclick = () => document.getElementById("sheet").classList.remove("open");
+  panel.append(close);
+  document.getElementById("sheet").classList.add("open");
+}
+let polling = null;
+const shown = new Set();
+function poll() {
+  // One request at a time, and each message is drawn once, however often poll() is called.
+  if (polling) return polling;
+  polling = (async () => {
+    try {
+      const r = await fetch(`/simulator/messages?wa_id=${WA}&after=${last}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      document.getElementById("mode").textContent = data.mode === "human" ? "With staff" : "Bot";
+      let added = false;
+      for (const m of data.messages) {
+        if (shown.has(m.id)) continue;
+        shown.add(m.id); render(m); added = true;
+        last = Math.max(last, m.id);
+      }
+      if (added) msgs.scrollTop = msgs.scrollHeight;
+    } finally { polling = null; }
+  })();
+  return polling;
+}
+async function resetChat() { if (confirm("Clear this chat? Orders stay.")) { await post("/simulator/reset", { wa_id: WA, text: "" }); msgs.replaceChildren(); shown.clear(); last = 0; } }
+document.getElementById("bar").onsubmit = e => { e.preventDefault(); const t = document.getElementById("text"); if (!t.value.trim()) return; const v = t.value; t.value = ""; post("/simulator/text", { wa_id: WA, name: NAME, text: v }); };
+document.getElementById("file").onchange = e => { const f = e.target.files[0]; if (!f) return; const fd = new FormData(); fd.append("wa_id", WA); fd.append("name", NAME); fd.append("file", f); e.target.value = ""; post("/simulator/file", fd); };
+poll(); setInterval(poll, 2000);
+</script>
+</body>
+</html>

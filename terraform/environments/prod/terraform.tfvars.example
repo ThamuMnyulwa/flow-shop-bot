@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars (git-ignored).
+project_id               = "oceanhub-dev"
+
+# The prod database, created in the Neon console (London). Use the POOLED string, after resetting the password.
+database_url    = "postgresql://neondb_owner:<password>@ep-....-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+neon_project_id = "quiet-sound-91322992"
+cors_origins             = "https://floww.netlify.app"
+base_url                 = ""     # e.g. "https://shop-api.floww.co.za" once a custom domain is mapped
+min_instances            = 0      # 1 = no slow first reply, about $10-14 a month
+whatsapp_live            = false  # true at go-live
+wa_business_number       = "27000000000"
+
+# Secrets, stored in Secret Manager. terraform.tfvars is never committed.
+secrets = {
+  # FLOWSHOP_WA_PHONE_ID     = ""
+  # FLOWSHOP_WA_TOKEN        = ""
+  # FLOWSHOP_WA_APP_SECRET   = ""
+  # FLOWSHOP_WA_VERIFY_TOKEN = ""
+  # FLOWSHOP_SENTRY_DSN      = ""
+}

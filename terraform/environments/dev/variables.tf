@@ -1,0 +1,34 @@
+variable "project_id" {
+  description = "Google Cloud project that holds both environments (the same one as in environments/shared)."
+  type        = string
+}
+
+variable "region" {
+  description = "Google Cloud region, next to Neon's London region."
+  type        = string
+  default     = "europe-west2"
+}
+
+variable "cors_origins" {
+  description = "Website origins allowed to read the product API, comma separated."
+  type        = string
+  default     = ""
+}
+
+variable "secrets" {
+  description = "Further secret settings, e.g. WhatsApp credentials or FLOWSHOP_SENTRY_DSN. Set in terraform.tfvars."
+  type        = map(string)
+  default     = {}
+  sensitive   = true
+}
+
+variable "database_url" {
+  description = "The dev Neon database's POOLED connection string (DATABASE_URL_POOLED). Set in terraform.tfvars."
+  type        = string
+  sensitive   = true
+}
+
+variable "neon_project_id" {
+  description = "The dev Neon project's id."
+  type        = string
+}

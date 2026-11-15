@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ conv.customer.name or conv.customer.wa_id }}
+  {% if conv.mode.value == 'human' %}<span class="pill warn">with staff</span>{% else %}<span class="pill ok">bot</span>{% endif %}</h1>
+<div class="grid split">
+<div>
+  <div class="chat" id="chat" hx-get="/inbox/{{ conv.id }}/messages" hx-trigger="every 4s" hx-swap="innerHTML">
+    {% include "_messages.html" %}
+  </div>
+  {% if in_window %}
+  <form method="post" action="/inbox/{{ conv.id }}/reply" class="card" style="margin-top:10px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <textarea name="body" placeholder="Reply as {{ staff.name }}" required></textarea>
+    <div class="actions"><button>Send</button></div>
+  </form>
+  {% else %}
+  <div class="flash error" style="margin-top:10px">It's more than 24 hours since the customer's last message. WhatsApp only allows approved templates until they write again.</div>
+  {% endif %}
+  <div class="actions">
+    {% if conv.mode.value == 'human' %}
+    <form method="post" action="/inbox/{{ conv.id }}/bot"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary">Hand back to the bot</button></form>
+    {% else %}
+    <form method="post" action="/inbox/{{ conv.id }}/takeover"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="secondary">Take over from the bot</button></form>
+    {% endif %}
+  </div>
+</div>
+<div class="card">
+  <h2 style="margin-top:0">Orders</h2>
+  {% for o in orders %}<p><a href="/admin/orders/{{ o.id }}">{{ o.reference }}</a> · {{ o.total_cents|rand }}<br><span class="pill">{{ o.status|status }}</span></p>
+  {% else %}<p class="muted">No orders.</p>{% endfor %}
+  <p class="small muted">{{ conv.customer.wa_id }}{% if conv.customer.marketing_opt_in %} · subscribed to news{% endif %}</p>
+</div>
+</div>
+<script>
+  document.addEventListener("htmx:afterSwap", e => { if (e.target.id === "chat") e.target.scrollTop = e.target.scrollHeight; });
+  const c = document.getElementById("chat"); c.scrollTop = c.scrollHeight;
+</script>
+{% endblock %}

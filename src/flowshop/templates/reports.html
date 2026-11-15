@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Reports</h1>
+<h2>Paid orders per week</h2>
+<div class="card table-wrap">
+<table>
+  <tr><th>Week</th><th>Orders</th><th>Revenue</th><th>Top products</th></tr>
+  {% for w in weeks %}
+  <tr><td class="small">{{ w.start|local('%d %b') }} to {{ w.end|local('%d %b') }}</td><td>{{ w.orders }}</td><td>{{ w.revenue_cents|rand }}</td>
+    <td class="small">{% for name, qty in w.top %}{{ name }} ({{ qty }}){% if not loop.last %}, {% endif %}{% else %}<span class="muted">none</span>{% endfor %}</td></tr>
+  {% endfor %}
+</table>
+</div>
+<h2>Success metrics</h2>
+<div class="card table-wrap">
+<table>
+  {% for key, value in metrics.items() %}
+  <tr><td>{{ key|replace('_', ' ')|capitalize }}</td><td><strong>{{ value if value is not none else "–" }}</strong></td></tr>
+  {% endfor %}
+</table>
+<p class="small muted">"Sent before payment" must always be 0. Revenue includes delivery fees.</p>
+</div>
+{% endblock %}

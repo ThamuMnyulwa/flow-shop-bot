@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Today</h1>
+{% if attention %}
+<div class="card">
+  <h2 style="margin-top:0">Needs attention</h2>
+  {% for o in attention %}
+  <p><a href="/admin/orders/{{ o.id }}">{{ o.reference }}</a> <span class="pill bad">{{ o.status|status }}</span><br>
+  <span class="small">{{ o.attention_reason }}</span></p>
+  {% endfor %}
+</div>
+{% endif %}
+<div class="grid">
+  <div class="card">
+    <h2 style="margin-top:0">Check the bank ({{ to_check|length }})</h2>
+    <p class="small muted">Proof of payment received. Confirm the money is in the account, then mark it paid.</p>
+    {% for o in to_check %}
+    <p><a href="/admin/orders/{{ o.id }}">{{ o.reference }}</a> · {{ o.total_cents|rand }} · <span class="muted small">{{ o.proof_received_at|local }}</span></p>
+    {% else %}<p class="muted">Nothing to check.</p>{% endfor %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">To send or hand over ({{ dispatch|length }})</h2>
+    {% for o, days in dispatch %}
+    <p><a href="/admin/orders/{{ o.id }}">{{ o.reference }}</a> · {{ o.fulfilment.value }}
+      {% if o.dispatch_by %}
+        {% if days < 0 %}<span class="pill bad">late: was due {{ o.dispatch_by.strftime('%d %b') }}</span>
+        {% elif days <= 1 %}<span class="pill warn">due {{ o.dispatch_by.strftime('%d %b') }}</span>
+        {% else %}<span class="pill">by {{ o.dispatch_by.strftime('%d %b') }}</span>{% endif %}
+      {% endif %}
+      {% if not o.stock_reserved %}<span class="pill bad">no stock held</span>{% endif %}
+    </p>
+    {% else %}<p class="muted">Nothing waiting.</p>{% endfor %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Low stock</h2>
+    {% for p in low %}
+    <p><a href="/admin/products/{{ p.id }}">{{ p.name }}</a> · {{ p.available }} available</p>
+    {% else %}<p class="muted">All stocked.</p>{% endfor %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Latest alerts</h2>
+    {% for n in notes %}
+    <p class="small">{% if n.link %}<a href="{{ n.link }}">{{ n.text }}</a>{% else %}{{ n.text }}{% endif %}<br><span class="muted">{{ n.created_at|local }}</span></p>
+    {% else %}<p class="muted">No alerts yet.</p>{% endfor %}
+  </div>
+</div>
+<div class="actions"><a class="button" href="/admin/orders/new">New order for a customer</a></div>
+{% endblock %}

@@ -1,0 +1,55 @@
+# Local development: one command starts the whole system (E1).
+#
+#   docker compose up --build
+#
+# - app:  the service, admin page, inbox and simulator, with sample data (E2), on http://localhost:8000
+# - db:   PostgreSQL 16
+# - jobs: payment reminders and the 48-hour release every 15 minutes, as in dev and prod
+#
+# No WhatsApp account, Meta setup or paid service is needed (E3). Production uses docker-compose.prod.yml.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flowshop
+      POSTGRES_PASSWORD: flowshop
+      POSTGRES_DB: flowshop
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowshop"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+    environment:
+      FLOWSHOP_ENV: local
+      FLOWSHOP_DATABASE_URL: postgresql://flowshop:flowshop@db:5432/flowshop
+      FLOWSHOP_BASE_URL: http://localhost:8000
+      FLOWSHOP_CHANNEL: simulator
+      FLOWSHOP_ALLOW_TIME_TRAVEL: "true"
+      FLOWSHOP_SEED_ON_START: "true"
+      FLOWSHOP_JOBS_TOKEN: local-jobs-token
+      FLOWSHOP_STORAGE_DIR: /app/var/storage
+      FLOWSHOP_CORS_ORIGINS: http://localhost:8888,http://localhost:8080
+    volumes: [storage:/app/var/storage]
+
+  jobs:
+    image: alpine:3.20
+    depends_on:
+      app: { condition: service_healthy }
+    environment:
+      APP_URL: http://app:8000
+      FLOWSHOP_JOBS_TOKEN: local-jobs-token
+      JOBS_INTERVAL: "900"
+    volumes: [./docker/jobs.sh:/jobs.sh:ro]
+    command: ["sh", "/jobs.sh"]
+
+volumes:
+  pgdata:
+  storage:

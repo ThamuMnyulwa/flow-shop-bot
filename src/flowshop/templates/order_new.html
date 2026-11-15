@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>New order for a customer</h1>
+<p class="muted">For orders taken by phone or in person. The same stock rules apply.</p>
+<form method="post" action="/admin/orders/new" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="draft_key" value="{{ range(10**12, 10**13)|random }}">
+  <div class="row">
+    <div><label for="wa">Customer WhatsApp number</label><input id="wa" name="wa_id" inputmode="tel" placeholder="0821234567" required></div>
+    <div><label for="nm">Name</label><input id="nm" name="name"></div>
+  </div>
+  <h2>Items</h2>
+  <table>
+    {% for p in products %}
+    <tr><td>{{ p.name }}<br><span class="small muted">{{ p.price_cents|rand }} · {{ p.available }} available</span></td>
+      <td style="width:110px"><input name="qty_{{ p.id }}" type="number" min="0" max="{{ p.available }}" placeholder="0"></td></tr>
+    {% endfor %}
+  </table>
+  <label for="ful">Delivery or collection</label>
+  <select id="ful" name="fulfilment"><option value="delivery">Delivery</option><option value="collection">Collection</option></select>
+  <label for="addr">Delivery address</label><textarea id="addr" name="address"></textarea>
+  <div class="actions"><button>Create order</button></div>
+</form>
+{% endblock %}

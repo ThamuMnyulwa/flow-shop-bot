@@ -1,0 +1,92 @@
+# Production on any server with Docker: a small VPS in Johannesburg or Cape Town works, as do the big clouds.
+#
+#   cp .env.prod.example .env.prod      # then fill it in
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod exec app flowshop seed --no-orders
+#
+# - caddy:  HTTPS with an automatic certificate for SITE_DOMAIN (WhatsApp webhooks need HTTPS)
+# - app:    the service, as on Render; migrations run on every start
+# - db:     PostgreSQL 16, not exposed to the internet
+# - jobs:   payment reminders and the 48-hour release every 15 minutes
+# - backup: a compressed database dump every night, kept for 14 days
+#
+# Render does not use this file; it runs the same image from render.yaml.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env.prod}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flowshop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: flowshop
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowshop"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    image: floww-shop:latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    env_file: .env.prod
+    environment:
+      FLOWSHOP_ENV: production
+      FLOWSHOP_DATABASE_URL: postgresql://flowshop:${POSTGRES_PASSWORD}@db:5432/flowshop
+      FLOWSHOP_BASE_URL: https://${SITE_DOMAIN}
+      FLOWSHOP_STORAGE_DIR: /var/data/storage
+      FLOWSHOP_ALLOW_TIME_TRAVEL: "false"
+      FLOWSHOP_SEED_ON_START: "false"
+    volumes: [files:/var/data]
+    expose: ["8000"]
+
+  jobs:
+    image: alpine:3.20
+    restart: unless-stopped
+    depends_on:
+      app: { condition: service_healthy }
+    environment:
+      APP_URL: http://app:8000
+      FLOWSHOP_JOBS_TOKEN: ${FLOWSHOP_JOBS_TOKEN:?set FLOWSHOP_JOBS_TOKEN in .env.prod}
+      JOBS_INTERVAL: "900"
+    volumes: [./docker/jobs.sh:/jobs.sh:ro]
+    command: ["sh", "/jobs.sh"]
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      app: { condition: service_healthy }  # after migrations, so the first backup has the tables
+    environment:
+      PGHOST: db
+      PGUSER: flowshop
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: flowshop
+      BACKUP_HOUR_UTC: "0"
+      BACKUP_KEEP_DAYS: "14"
+    volumes:
+      - ./docker/backup.sh:/backup.sh:ro
+      - backups:/backups
+    entrypoint: ["sh", "/backup.sh"]
+
+volumes:
+  pgdata:
+  files:
+  backups:
+  caddy-data:
+  caddy-config:

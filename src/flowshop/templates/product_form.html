@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ product.name if product else "Add product" }}</h1>
+<div class="grid">
+<div class="card">
+  <form method="post" action="{{ '/admin/products/%d' % product.id if product else '/admin/products' }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="row">
+      <div><label for="code">Code (used in website links)</label><input id="code" name="code" value="{{ product.code if product }}" placeholder="HW-02" required maxlength="16"></div>
+      <div><label for="price">Price (rand)</label><input id="price" name="price" value="{{ (product.price_cents / 100)|round(2) if product else '' }}" inputmode="decimal" required></div>
+    </div>
+    <label for="name">Name (24 characters at most)</label><input id="name" name="name" value="{{ product.name if product }}" maxlength="24" required>
+    <label for="description">Short description (72 characters at most)</label><input id="description" name="description" value="{{ product.description if product }}" maxlength="72">
+    <div class="row">
+      <div><label for="category">Category (optional)</label><input id="category" name="category" list="cats" value="{{ product.category.name if product and product.category }}" maxlength="24">
+        <datalist id="cats">{% for c in categories %}<option value="{{ c.name }}">{% endfor %}</datalist></div>
+      <div><label for="status">Status</label><select id="status" name="status">
+        {% for s in statuses %}<option value="{{ s.value }}" {{ 'selected' if product and product.status == s }}>{{ s|status }}</option>{% endfor %}
+      </select></div>
+    </div>
+    <div class="row">
+      <div><label for="low">Alert when available falls to</label><input id="low" name="low_stock_threshold" type="number" min="0" value="{{ product.low_stock_threshold if product else 2 }}"></div>
+      {% if not product %}<div><label for="on_hand">Opening stock</label><input id="on_hand" name="on_hand" type="number" min="0" value="0"></div>{% endif %}
+    </div>
+    <p class="small muted">"Launching soon" shows on the website and in the bot, but cannot be ordered. "Hidden" shows nowhere.</p>
+    <div class="actions"><button>Save</button><a class="button secondary" href="/admin/products">Back</a></div>
+  </form>
+</div>
+{% if product %}
+<div>
+  <div class="card">
+    <h2 style="margin-top:0">Stock</h2>
+    <p>On hand <strong>{{ product.on_hand }}</strong> · reserved <strong>{{ product.reserved }}</strong> · available <strong>{{ product.available }}</strong></p>
+    <form method="post" action="/admin/products/{{ product.id }}/stock">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <div class="row">
+        <div><label for="oh">New on-hand count</label><input id="oh" name="on_hand" type="number" min="{{ product.reserved }}" value="{{ product.on_hand }}" required></div>
+        <div><label for="note">Reason</label><input id="note" name="note" placeholder="Count, delivery from supplier…" required></div>
+      </div>
+      <div class="actions"><button>Update stock</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Photo</h2>
+    {% if product.image_key %}<img class="product-photo" src="/api/images/{{ product.image_key }}" alt="{{ product.name }}">
+    {% else %}<p class="muted small">No photo yet. Customers see the photo in WhatsApp when they open this product, and on the website.</p>{% endif %}
+    <form method="post" action="/admin/products/{{ product.id }}/image" enctype="multipart/form-data">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <input type="file" name="image" accept="image/jpeg,image/png" required>
+      <p class="small muted">JPEG or PNG, under 5 MB. A square photo looks best.</p>
+      <div class="actions"><button class="secondary">{{ "Replace photo" if product.image_key else "Upload photo" }}</button></div>
+    </form>
+  </div>
+</div>
+{% endif %}
+</div>
+{% if product %}
+<h2>Stock history</h2>
+<div class="card table-wrap">
+<table>
+  <tr><th>When</th><th>Change</th><th>Why</th><th>Who</th></tr>
+  {% for m in moves %}
+  <tr><td class="small">{{ m.created_at|local }}</td>
+    <td class="small">{% if m.delta_on_hand %}on hand {{ '%+d' % m.delta_on_hand }} {% endif %}{% if m.delta_reserved %}reserved {{ '%+d' % m.delta_reserved }}{% endif %}</td>
+    <td class="small">{{ m.reason.value|replace('_', ' ') }}{% if m.note %}: {{ m.note }}{% endif %}{% if m.order_id %} · <a href="/admin/orders/{{ m.order_id }}">order</a>{% endif %}</td>
+    <td class="small">{{ m.staff.name if m.staff else 'system' }}</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}
