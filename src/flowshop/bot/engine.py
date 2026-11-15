@@ -150,6 +150,12 @@ class Bot:
     # ----- buttons and list replies ----------------------------------------
 
     def on_reply(self, reply_id: str, title: str) -> None:
+        try:
+            self._route_reply(reply_id)
+        except ValueError:  # a malformed or stale button id
+            self.main_menu()
+
+    def _route_reply(self, reply_id: str) -> None:
         action, _, arg = reply_id.partition(":")
         self.conv.misunderstood_count = 0
         match action:

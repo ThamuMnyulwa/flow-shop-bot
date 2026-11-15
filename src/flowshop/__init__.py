@@ -34,12 +34,20 @@ def main() -> None:
 
         command.upgrade(Config(os.path.join(os.getcwd(), "alembic.ini")), "head")
     elif args.command == "seed":
+        from flowshop.config import get_settings
         from flowshop.db import session_scope
         from flowshop.seed import seed_all
 
+        password = os.environ.get("FLOWSHOP_ADMIN_PASSWORD", "")
+        if get_settings().env == "production":
+            if len(password) < 12:
+                sys.exit("In production, set FLOWSHOP_ADMIN_PASSWORD (12+ characters) and run seed --no-orders.")
+            if not args.no_orders:
+                sys.exit("Test orders are never loaded in production. Use seed --no-orders.")
         with session_scope() as db:
-            seed_all(db, with_orders=not args.no_orders)
-        print("Seeded. Admin sign-in: admin@floww.local / floww-admin (change it). Collection code: FLOWW2026")
+            seed_all(db, with_orders=not args.no_orders, admin_password=password or "floww-admin")
+        shown = "the password you set" if password else "floww-admin (change it)"
+        print(f"Seeded. Admin sign-in: admin@floww.local / {shown}. Collection code: FLOWW2026")
     elif args.command == "create-staff":
         from flowshop import clock
         from flowshop.auth import hash_password

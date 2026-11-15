@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOWW website stock example</title>
+<style>
+  :root { --bg:#fff; --ink:#1d1b19; --muted:#6b655e; --brand:#b4471f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#161412; --ink:#f1ece6; --muted:#a39b92; --brand:#e0703f; } }
+  body { margin:0; padding:16px; font-family:system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+  .grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); max-width:960px; margin:0 auto; }
+  .floww-product, [data-floww-product] { border:1px solid #ddd5; border-radius:10px; padding:14px; }
+  .floww-order, [data-floww="order"] { display:inline-block; padding:8px 12px; border-radius:8px; background:var(--brand); color:#fff; text-decoration:none; }
+  [aria-disabled="true"] { background:var(--muted); }
+  img { max-width:100%; border-radius:8px; }
+</style>
+</head>
+<body>
+<!-- Open with the service running locally: python3 -m http.server 8888 in this folder, then
+     http://localhost:8888/website-example.html (port 8888 is allowed through CORS in local settings). -->
+<h1>Hand-placed product</h1>
+<div class="grid">
+  <div data-floww-product="HW-01">
+    <h3>Headwrap</h3>
+    <p><strong data-floww="price">R100</strong> · <span data-floww="availability">In stock</span></p>
+    <a data-floww="order">Order on WhatsApp</a>
+  </div>
+</div>
+<h1>Whole catalogue</h1>
+<div class="grid" data-floww-catalogue></div>
+<script src="http://localhost:8000/static/embed/floww-shop.js" data-api="http://localhost:8000" defer></script>
+</body>
+</html>

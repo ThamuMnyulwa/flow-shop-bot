@@ -23,7 +23,10 @@ TEST_CUSTOMERS = [("27820000001", "Thandi Test"), ("27820000002", "Sipho Test"),
 
 
 def access(request: Request, db: Session = Depends(get_db)) -> None:
-    """Open on a developer's machine; elsewhere only signed-in staff can play the customer."""
+    """Open on a developer's machine; elsewhere only signed-in staff can play the customer.
+    Once the live WhatsApp channel is on, the simulator is off: its fake numbers would be sent to Meta."""
+    if get_settings().channel != "simulator":
+        raise HTTPException(404)
     if get_settings().env == "local":
         return
     try:

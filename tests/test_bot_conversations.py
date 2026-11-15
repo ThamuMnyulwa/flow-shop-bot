@@ -326,3 +326,17 @@ def test_marketing_opt_in_is_separate(client):
     assert "subscribed" in texts(out)
     out = c.say("STOP")
     assert "won't receive" in texts(out)
+
+
+def test_malformed_button_id_returns_to_menu(client):
+    c = SimCustomer(client)
+    c._post("/simulator/reply", json={"wa_id": c.wa_id, "name": c.name, "reply_id": "prod:not-a-number",
+                                      "title": "x"})
+    assert "Welcome" in c.last_bot()["text"]
+
+
+def test_simulator_off_when_whatsapp_is_live(client, monkeypatch):
+    from flowshop.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "channel", "whatsapp")
+    assert client.get("/simulator").status_code == 404

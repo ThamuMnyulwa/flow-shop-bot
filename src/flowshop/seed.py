@@ -50,9 +50,9 @@ def seed_staff(db: Session, email: str = "admin@floww.local", password: str = "f
     return staff
 
 
-def seed_all(db: Session, with_orders: bool = True) -> None:
+def seed_all(db: Session, with_orders: bool = True, admin_password: str = "floww-admin") -> None:
     products = seed_catalogue(db)
-    staff = seed_staff(db)
+    staff = seed_staff(db, password=admin_password)
     if not settings.get(db, "collection_code"):
         settings.put(db, "collection_code", "FLOWW2026")
     if not with_orders or db.scalar(select(Customer).where(Customer.wa_id == "27820000001")):

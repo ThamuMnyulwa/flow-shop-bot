@@ -1,0 +1,37 @@
+# One command starts the whole system locally (E1): docker compose up
+# The service, PostgreSQL, the admin page, the inbox and the simulator, with sample data (E2).
+# No WhatsApp account, Meta setup or paid service is needed (E3).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: flowshop
+      POSTGRES_PASSWORD: flowshop
+      POSTGRES_DB: flowshop
+    ports: ["5433:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowshop"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8000:8000"]
+    environment:
+      FLOWSHOP_ENV: local
+      FLOWSHOP_DATABASE_URL: postgresql+psycopg://flowshop:flowshop@db:5432/flowshop
+      FLOWSHOP_BASE_URL: http://localhost:8000
+      FLOWSHOP_CHANNEL: simulator
+      FLOWSHOP_ALLOW_TIME_TRAVEL: "true"
+      FLOWSHOP_STORAGE_DIR: /app/var/storage
+      FLOWSHOP_CORS_ORIGINS: http://localhost:8888,http://localhost:8080
+    volumes: [storage:/app/var/storage]
+    command: ["sh", "-c", "flowshop migrate && flowshop seed && flowshop serve --host 0.0.0.0 --port 8000"]
+
+volumes:
+  pgdata:
+  storage:

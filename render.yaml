@@ -1,0 +1,51 @@
+# Render blueprint for staging and production (E13). The database is Neon; set its URL in the dashboard.
+# See docs/deploy-render.md.
+services:
+  - type: web
+    name: floww-shop
+    runtime: docker
+    plan: starter            # stays awake; the free plan sleeps and breaks the 5-second reply target
+    region: frankfurt        # nearest to Neon's Frankfurt region and to South Africa
+    healthCheckPath: /healthz
+    envVars:
+      - key: FLOWSHOP_ENV
+        value: production
+      - key: FLOWSHOP_DATABASE_URL
+        sync: false          # Neon connection string, postgresql+psycopg://...?sslmode=require
+      - key: FLOWSHOP_SECRET_KEY
+        generateValue: true
+      - key: FLOWSHOP_JOBS_TOKEN
+        generateValue: true
+      - key: FLOWSHOP_BASE_URL
+        sync: false
+      - key: FLOWSHOP_CORS_ORIGINS
+        sync: false          # the Netlify site, e.g. https://floww.netlify.app
+      - key: FLOWSHOP_CHANNEL
+        value: simulator     # switch to whatsapp at go-live
+      - key: FLOWSHOP_STORAGE_BACKEND
+        value: s3            # Render's disk is wiped on deploy, so files go to object storage
+      - key: FLOWSHOP_S3_BUCKET
+        sync: false
+      - key: FLOWSHOP_S3_ENDPOINT_URL
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: FLOWSHOP_WA_BUSINESS_NUMBER
+        sync: false
+
+  # Scheduled work (E12): every 15 minutes, payment reminders and the 48-hour release.
+  - type: cron
+    name: floww-shop-jobs
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    schedule: "*/15 * * * *"
+    dockerCommand: >-
+      python -c "import os,urllib.request; r=urllib.request.Request(os.environ['FLOWSHOP_BASE_URL']+'/jobs/run',
+      method='POST', headers={'Authorization':'Bearer '+os.environ['FLOWSHOP_JOBS_TOKEN']}); print(urllib.request.urlopen(r).read())"
+    envVars:
+      - key: FLOWSHOP_BASE_URL
+        sync: false
+      - key: FLOWSHOP_JOBS_TOKEN
+        sync: false          # copy the web service's generated value
