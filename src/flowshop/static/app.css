@@ -84,3 +84,6 @@ button.danger { background: var(--bad); }
   margin-bottom: 10px; background: var(--line); }
 .cards-mini { display: flex; gap: 6px; margin: 8px 0 2px; overflow-x: auto; }
 .cards-mini img { width: 64px; height: 64px; border-radius: 6px; object-fit: cover; flex: 0 0 64px; }
+.env-banner { background: #3b5bdb; color: #fff; text-align: center; font-size: 14px; font-weight: 600; padding: 4px 16px;
+  letter-spacing: .02em; }
+.env-banner.env-local { background: #5c636a; }

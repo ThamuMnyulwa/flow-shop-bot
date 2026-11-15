@@ -282,12 +282,12 @@ The chat channel is swappable. The bot is built against a simulator first, and t
 
 ## Environments, local testing and release
 
-Every change is run and tested on the developer's own machine first, then on a staging copy, and only then released to customers.
+Every change is run and tested on the developer's own machine first, then on the dev environment, and only then released to customers in prod.
 
 | Environment | Where it runs | Database | Chat channel | Purpose |
 | --- | --- | --- | --- | --- |
 | Local | The developer's machine | PostgreSQL in Docker, filled with sample data | Simulator | Build and test changes with no internet account needed |
-| Staging | Hosted, private link | A separate hosted database | Simulator, later a Meta test number | Staff try a change before customers see it |
+| Dev | Hosted, from the `develop` branch | A separate Neon branch with sample data only | Simulator, later a Meta test number | Staff try a change before customers see it |
 | Production | Hosted, public | The live database | Simulator until go-live, then the business WhatsApp number | Real customers and real stock |
 
 **Local development requirements**

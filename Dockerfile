@@ -18,9 +18,13 @@ COPY --from=build --chown=app /app/.venv /app/.venv
 COPY --chown=app src ./src
 COPY --chown=app alembic.ini ./
 COPY --chown=app migrations ./migrations
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 HOST=0.0.0.0 PORT=8000
-USER app
 EXPOSE 8000
+# The entrypoint fixes ownership of a mounted storage disk, then drops to the app user.
+ENTRYPOINT ["docker-entrypoint.sh"]
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/healthz')"
 # Migrations run on start, so a deploy and its schema change go out together (E5).
-CMD ["sh", "-c", "flowshop migrate && flowshop serve --host $HOST --port $PORT"]
+# FLOWSHOP_SEED_ON_START=true (dev only) loads the sample catalogue, staff account and test orders; it is idempotent
+# and refuses to run in production.
+CMD ["sh", "-c", "flowshop migrate && if [ \"$FLOWSHOP_SEED_ON_START\" = true ]; then flowshop seed; fi && flowshop serve --host $HOST --port $PORT"]

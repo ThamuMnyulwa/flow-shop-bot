@@ -39,11 +39,12 @@ def main() -> None:
         from flowshop.seed import seed_all
 
         password = os.environ.get("FLOWSHOP_ADMIN_PASSWORD", "")
-        if get_settings().env == "production":
-            if len(password) < 12:
-                sys.exit("In production, set FLOWSHOP_ADMIN_PASSWORD (12+ characters) and run seed --no-orders.")
-            if not args.no_orders:
-                sys.exit("Test orders are never loaded in production. Use seed --no-orders.")
+        env = get_settings().env
+        # Anywhere reachable from the internet, the first admin needs a real password, never the default.
+        if env != "local" and len(password) < 12:
+            sys.exit(f"In {env}, set FLOWSHOP_ADMIN_PASSWORD (12+ characters) before seeding.")
+        if env == "production" and not args.no_orders:
+            sys.exit("Test orders are never loaded in production. Use seed --no-orders.")
         with session_scope() as db:
             seed_all(db, with_orders=not args.no_orders, admin_password=password or "floww-admin")
         shown = "the password you set" if password else "floww-admin (change it)"

@@ -27,6 +27,8 @@ def create_app() -> FastAPI:
     if settings.env == "production" and settings.allow_time_travel:
         raise RuntimeError("Time travel must be off in production.")
 
+    _check_storage(settings)
+
     app = FastAPI(title="FLOWW shop", docs_url="/api/docs" if settings.env != "production" else None,
                   redoc_url=None)
     app.add_middleware(SessionMiddleware, secret_key=settings.secret_key, session_cookie="floww_session",
@@ -61,6 +63,20 @@ def create_app() -> FastAPI:
         return {"ok": True}
 
     return app
+
+
+def _check_storage(settings) -> None:
+    """Fail at start-up if file storage isn't writable, instead of losing the first photo or proof of payment."""
+    if settings.storage_backend != "local":
+        return
+    root = Path(settings.storage_dir)
+    try:
+        root.mkdir(parents=True, exist_ok=True)
+        probe = root / ".write-check"
+        probe.write_text("ok")
+        probe.unlink()
+    except OSError as exc:
+        raise RuntimeError(f"File storage at {root} is not writable: {exc}") from exc
 
 
 app = create_app()

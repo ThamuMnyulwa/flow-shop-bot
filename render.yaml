@@ -1,51 +1,115 @@
-# Render blueprint for staging and production (E13). The database is Neon; set its URL in the dashboard.
-# See docs/deploy-render.md.
+# Render blueprint: a dev and a prod environment, each with its own service, database, disk and scheduled jobs.
+# dev deploys from the `develop` branch, prod from `main`. See docs/deploy-render.md.
+#
+# Values marked `sync: false` are entered in the Render dashboard on first deploy; they never live in git.
+
 services:
+  # ---------- dev: try changes here first, with sample data and the simulator ----------
   - type: web
-    name: floww-shop
+    name: floww-shop-dev
     runtime: docker
-    plan: starter            # stays awake; the free plan sleeps and breaks the 5-second reply target
+    branch: develop
+    autoDeploy: true
+    plan: starter            # a disk needs a paid plan
     region: frankfurt        # nearest to Neon's Frankfurt region and to South Africa
     healthCheckPath: /healthz
+    disk:
+      name: floww-dev-files
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: FLOWSHOP_ENV
-        value: production
+        value: dev
       - key: FLOWSHOP_DATABASE_URL
-        sync: false          # Neon connection string, postgresql+psycopg://...?sslmode=require
+        sync: false          # Neon `dev` branch connection string, pasted as Neon shows it
       - key: FLOWSHOP_SECRET_KEY
         generateValue: true
       - key: FLOWSHOP_JOBS_TOKEN
         generateValue: true
       - key: FLOWSHOP_BASE_URL
-        sync: false
+        sync: false          # e.g. https://floww-shop-dev.onrender.com
       - key: FLOWSHOP_CORS_ORIGINS
-        sync: false          # the Netlify site, e.g. https://floww.netlify.app
+        sync: false          # the website's Netlify preview URL
       - key: FLOWSHOP_CHANNEL
-        value: simulator     # switch to whatsapp at go-live
-      - key: FLOWSHOP_STORAGE_BACKEND
-        value: s3            # Render's disk is wiped on deploy, so files go to object storage
-      - key: FLOWSHOP_S3_BUCKET
-        sync: false
-      - key: FLOWSHOP_S3_ENDPOINT_URL
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
+        value: simulator     # later: whatsapp with a Meta test number
+      - key: FLOWSHOP_ALLOW_TIME_TRAVEL
+        value: "true"        # the test clock, so the 48-hour rules can be checked in minutes
+      - key: FLOWSHOP_SEED_ON_START
+        value: "true"        # sample products, admin account and test orders; never real customer data
+      - key: FLOWSHOP_ADMIN_PASSWORD
+        generateValue: true  # the dev admin password: read it in the dashboard
+      - key: FLOWSHOP_STORAGE_DIR
+        value: /var/data/storage
       - key: FLOWSHOP_WA_BUSINESS_NUMBER
-        sync: false
+        value: "27000000000"
 
-  # Scheduled work (E12): every 15 minutes, payment reminders and the 48-hour release.
   - type: cron
-    name: floww-shop-jobs
-    runtime: docker
-    dockerfilePath: ./Dockerfile
-    schedule: "*/15 * * * *"
-    dockerCommand: >-
-      python -c "import os,urllib.request; r=urllib.request.Request(os.environ['FLOWSHOP_BASE_URL']+'/jobs/run',
-      method='POST', headers={'Authorization':'Bearer '+os.environ['FLOWSHOP_JOBS_TOKEN']}); print(urllib.request.urlopen(r).read())"
+    name: floww-shop-dev-jobs
+    runtime: python
+    region: frankfurt
+    schedule: "*/15 * * * *"  # payment reminders and the 48-hour release
+    buildCommand: "true"
+    startCommand: >-
+      python -c "import os,urllib.request as u; r=u.Request(os.environ['FLOWSHOP_BASE_URL']+'/jobs/run',
+      method='POST', headers={'Authorization':'Bearer '+os.environ['FLOWSHOP_JOBS_TOKEN']}); print(u.urlopen(r).read())"
     envVars:
       - key: FLOWSHOP_BASE_URL
         sync: false
       - key: FLOWSHOP_JOBS_TOKEN
-        sync: false          # copy the web service's generated value
+        fromService:
+          type: web
+          name: floww-shop-dev
+          envVarKey: FLOWSHOP_JOBS_TOKEN
+
+  # ---------- prod: real customers and real stock ----------
+  - type: web
+    name: floww-shop-prod
+    runtime: docker
+    branch: main
+    autoDeploy: false        # prod deploys only when you press Deploy, after a backup
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /healthz
+    disk:
+      name: floww-prod-files
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: FLOWSHOP_ENV
+        value: production
+      - key: FLOWSHOP_DATABASE_URL
+        sync: false          # Neon `main` branch connection string
+      - key: FLOWSHOP_SECRET_KEY
+        generateValue: true
+      - key: FLOWSHOP_JOBS_TOKEN
+        generateValue: true
+      - key: FLOWSHOP_BASE_URL
+        sync: false          # e.g. https://floww-shop-prod.onrender.com, or a custom domain
+      - key: FLOWSHOP_CORS_ORIGINS
+        sync: false          # the live Netlify site
+      - key: FLOWSHOP_CHANNEL
+        value: simulator     # switch to whatsapp at go-live
+      - key: FLOWSHOP_STORAGE_DIR
+        value: /var/data/storage
+      - key: FLOWSHOP_WA_BUSINESS_NUMBER
+        sync: false
+      - key: FLOWSHOP_SENTRY_DSN
+        sync: false          # error alerts (O1); optional until go-live
+
+  - type: cron
+    name: floww-shop-prod-jobs
+    runtime: python
+    region: frankfurt
+    schedule: "*/15 * * * *"
+    buildCommand: "true"
+    startCommand: >-
+      python -c "import os,urllib.request as u; r=u.Request(os.environ['FLOWSHOP_BASE_URL']+'/jobs/run',
+      method='POST', headers={'Authorization':'Bearer '+os.environ['FLOWSHOP_JOBS_TOKEN']}); print(u.urlopen(r).read())"
+    envVars:
+      - key: FLOWSHOP_BASE_URL
+        sync: false
+      - key: FLOWSHOP_JOBS_TOKEN
+        fromService:
+          type: web
+          name: floww-shop-prod
+          envVarKey: FLOWSHOP_JOBS_TOKEN

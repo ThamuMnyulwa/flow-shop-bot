@@ -2,13 +2,14 @@
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="FLOWSHOP_", extra="ignore")
 
-    env: str = "local"  # local, staging, production
+    env: str = "local"  # local, dev, production
     database_url: str = "postgresql+psycopg://localhost/flowshop"
     secret_key: str = "dev-only-change-me"
     base_url: str = "http://localhost:8000"
@@ -57,6 +58,19 @@ class Settings(BaseSettings):
     ai_enabled: bool = False
     anthropic_api_key: str = ""
     ai_model: str = "claude-opus-5-5"
+
+    @field_validator("database_url")
+    @classmethod
+    def _psycopg_driver(cls, url: str) -> str:
+        """Accept the connection string as Neon or Render show it (postgres:// or postgresql://)."""
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg://" + url.removeprefix(prefix)
+        return url
+
+    @property
+    def is_production(self) -> bool:
+        return self.env == "production"
 
     @property
     def cors_origin_list(self) -> list[str]:

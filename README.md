@@ -17,6 +17,8 @@ The design is in [the PRD](docs/0_PRD%20WhatsApp%20ordering%20and%20stock%20mana
 docker compose up --build
 ```
 
+This starts the service, PostgreSQL and the scheduled-jobs container.
+
 **Without Docker (uses a local PostgreSQL):**
 
 ```sh
@@ -83,6 +85,7 @@ pending_payment ─proof─▶ proof_received ─staff verify─▶ paid ─▶ 
 
 ## Guides
 
-- [Deploy to Render and Neon](docs/deploy-render.md)
+- [Deploy: dev and prod on Render and Neon](docs/deploy-render.md)
+- [Run with Docker, locally or on your own server](docs/self-host-docker.md)
 - [Go live on WhatsApp](docs/go-live-whatsapp.md)
 - [Connect the Netlify website](docs/website-integration.md)

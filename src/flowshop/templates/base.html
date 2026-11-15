@@ -10,6 +10,7 @@
   {% block head %}{% endblock %}
 </head>
 <body hx-headers='{"X-CSRF-Token": "{{ csrf }}"}'>
+{% if env != 'production' %}<div class="env-banner env-{{ env }}">{{ env|upper }}: test data, not real orders</div>{% endif %}
 {% if staff %}
 <header class="top">
   <a class="brand" href="/admin">FLOWW shop</a>
