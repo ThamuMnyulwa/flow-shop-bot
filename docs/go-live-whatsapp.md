@@ -38,6 +38,12 @@ Templates with other names can be set in `FLOWSHOP_WA_TEMPLATE_ORDER_UPDATE` and
 
 3. In the developer console, set the webhook URL to `https://<tunnel>/webhook` with the same verify token, and subscribe to the `messages` field.
 4. Message the test number from your phone, and run one full order: browse, confirm, send proof, mark paid.
+5. Check the product photos. Open a product that has a photo on your phone and on WhatsApp Web, and check that:
+   - the photo shows above the name and price on both
+   - "Add to order" works
+   - the "Added to your order" message and a one-item order summary also show the photo
+
+   The service uploads each photo file to Meta, so photos work through the tunnel too. If an upload fails, the message still goes out without the photo, and the error is logged.
 
 The business number is never touched during this test.
 

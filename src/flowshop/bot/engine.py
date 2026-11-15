@@ -335,20 +335,21 @@ class Bot:
         cart[p.id] = base + qty
         self.cart = cart
         self.data.pop("replace", None)
-        self.show_cart(prefix=f"Added {qty} × {p.name}.\n\n")
+        self.show_cart(prefix=f"Added {qty} × {p.name}.\n\n", photo=catalogue.image(p))
 
     def cart_lines(self) -> tuple[str, orders.Quote]:
         q = orders.quote(self.db, self.cart, None)
         lines = "\n".join(f"• {line.product.name} × {line.quantity}: {rand(line.line_cents)}" for line in q.lines)
         return lines, q
 
-    def show_cart(self, prefix: str = "") -> None:
+    def show_cart(self, prefix: str = "", photo: tuple[str, str] | None = None) -> None:
+        """The order so far. `photo` is the item just added, so the customer sees what they're buying."""
         if not self.cart:
             return self.say(buttons("Your order is empty.", ("browse", "Browse products"), ("menu", "Main menu")))
         self.go("cart")
         lines, q = self.cart_lines()
         self.say(buttons(f"{prefix}Your order:\n{lines}\nProducts: {rand(q.subtotal_cents)}",
-                         ("browse", "Add more"), ("checkout", "Checkout"), ("edit", "Edit order")))
+                         ("browse", "Add more"), ("checkout", "Checkout"), ("edit", "Edit order"), image=photo))
 
     def edit_cart(self) -> None:
         if not self.cart:
@@ -449,7 +450,11 @@ class Bot:
         body = (f"*Order summary*\n{lines}\n{how}\n*Total: {rand(q.total_cents)}*\n\n"
                 f"Payment by EFT. Paid orders are sent within {days} working days. "
                 f"Returns: {settings.get(self.db, 'returns_url')}\nSeller: {settings.get(self.db, 'seller_name')}")
-        self.say(buttons(body, ("confirm", "Confirm order"), ("edit", "Edit order"), ("discard", "Cancel")))
+        # One photo fits a WhatsApp message, so a one-product order shows it; larger orders showed each
+        # item's photo as it was added.
+        photo = catalogue.image(q.lines[0].product) if len(q.lines) == 1 else None
+        self.say(buttons(body, ("confirm", "Confirm order"), ("edit", "Edit order"), ("discard", "Cancel"),
+                         image=photo))
 
     def confirm(self) -> None:
         key = self.data.get("draft_key")

@@ -352,3 +352,32 @@ def test_photo_upload_rejects_non_images(staff_client):
     r = upload_photo(staff_client, "HW-01", data=b"<svg>not a photo</svg>", name="x.png")
     assert "Use a JPEG or PNG photo" in r.text
     assert staff_client.get("/api/products/HW-01").json()["image_url"] is None
+
+
+def test_photo_shown_when_item_added_and_in_one_item_summary(staff_client):
+    upload_photo(staff_client, "HW-01")
+    c = SimCustomer(staff_client)
+    c.say("[HW-01]")
+    c.tap("Add to order")
+    added = c.tap("2")[-1]
+    assert "Added 2 × Headwrap" in added["text"] and added["payload"]["image_path"].startswith("/api/images/")
+    c.tap("Checkout")
+    c.tap("Delivery")
+    summary = c.say("14 Jacaranda Street, Melville, Johannesburg, 2092")[-1]
+    assert "Order summary" in summary["text"] and summary["payload"]["image_path"]
+
+
+def test_multi_item_summary_is_text_only(staff_client):
+    upload_photo(staff_client, "HW-01")
+    c = SimCustomer(staff_client)
+    c.say("[HW-01]")
+    c.tap("Add to order")
+    c.tap("1")
+    c.tap("Add more")
+    c.tap("Notebook")
+    c.tap("Add to order")
+    assert c.tap("1")[-1]["payload"]["image_path"] == ""  # the notebook has no photo
+    c.tap("Checkout")
+    c.tap("Delivery")
+    summary = c.say("14 Jacaranda Street, Melville, Johannesburg, 2092")[-1]
+    assert summary["payload"]["image_path"] == ""

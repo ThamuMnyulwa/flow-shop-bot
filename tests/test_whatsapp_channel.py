@@ -52,13 +52,27 @@ def test_reply_buttons(wa):
     assert all(isinstance(b, Button) for b in sent) and [b.callback_data for b in sent] == ["a", "b"]
 
 
-def test_buttons_under_a_product_photo(wa):
+def test_buttons_under_a_product_photo(wa, tmp_path, monkeypatch):
+    from flowshop import storage
+
+    monkeypatch.setattr(storage, "get_storage", lambda: storage.LocalStorage(str(tmp_path)))
+    (tmp_path / "products").mkdir()
+    (tmp_path / "products" / "a.png").write_bytes(b"png-bytes")
+    monkeypatch.setattr("flowshop.channels.whatsapp.get_storage", storage.get_storage)
     channel, fake = wa
     photo = ("https://shop.example/api/images/products/a.png", "/api/images/products/a.png")
     channel.send("2782", base.buttons("*Headwrap* · R100", ("add:1", "Add to order"), image=photo))
     name, kwargs = fake.calls[0]
-    assert name == "send_image" and kwargs["image"] == photo[0] and kwargs["caption"] == "*Headwrap* · R100"
-    assert [b.callback_data for b in kwargs["buttons"]] == ["add:1"]
+    assert name == "send_image" and kwargs["image"] == b"png-bytes" and kwargs["mime_type"] == "image/png"
+    assert kwargs["caption"] == "*Headwrap* · R100" and [b.callback_data for b in kwargs["buttons"]] == ["add:1"]
+
+
+def test_photo_failure_still_sends_text_and_buttons(wa):
+    channel, fake = wa
+    photo = ("https://shop.example/api/images/products/missing.png", "/api/images/products/missing.png")
+    channel.send("2782", base.buttons("*Headwrap* · R100", ("add:1", "Add to order"), image=photo))
+    name, kwargs = fake.calls[-1]
+    assert name == "send_message" and kwargs["text"] == "*Headwrap* · R100"  # photo missing: text still goes
 
 
 def test_list(wa):
