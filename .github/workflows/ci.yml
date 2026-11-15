@@ -26,3 +26,24 @@ jobs:
       - run: uv run ruff check src tests
       - run: uv run pytest -q
       - run: docker build -t floww-shop .
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.16"
+      - run: terraform fmt -recursive -check terraform
+      - name: Validate environments
+        run: |
+          for env in dev prod; do
+            terraform -chdir=terraform/environments/$env init -backend=false -input=false
+            terraform -chdir=terraform/environments/$env validate
+          done
+      - name: Module tests (mocked providers, no accounts)
+        run: |
+          terraform -chdir=terraform/modules/environment init -backend=false -input=false
+          terraform -chdir=terraform/modules/environment test
+      - name: Shell scripts
+        run: shellcheck -S warning scripts/deploy.sh docker/*.sh docker-entrypoint.sh

@@ -1,75 +1,75 @@
 # Deploy: dev and prod
 
-There are two environments, each with its own server, database, files and scheduled jobs.
+There are two environments. Each has its own server, database, files and scheduled jobs, all defined in [terraform/](../terraform/README.md).
 
 | | Dev | Prod |
 | --- | --- | --- |
-| Purpose | Try changes, with you and staff, before customers see them | Real customers, real stock |
-| Git branch | `develop`, deployed on every push | `main`, deployed only when you press **Deploy** |
-| Render services | `floww-shop-dev` + `floww-shop-dev-jobs` | `floww-shop-prod` + `floww-shop-prod-jobs` |
-| Database | Neon branch `dev` | Neon branch `main` |
-| Data | Sample products, a test admin and test orders, loaded on start | Real data only |
+| Purpose | Try changes with you and staff before customers see them | Real customers, real stock |
+| Git branch | `develop` | `main` |
+| Deployed by | `scripts/deploy.sh dev` | `scripts/deploy.sh prod` |
+| Database | Its own Neon project, with sample data only | Its own Neon project, with real data |
 | WhatsApp | Simulator, later a Meta test number | Simulator until go-live, then the business number |
 | Test clock | On | Off |
 | Banner | Blue "DEV: test data" on every page | None |
 
-**Never copy prod data into dev.** Customer names, numbers and addresses are personal information under POPIA. Dev always runs on sample data.
+**Never copy prod data into dev.** Customer names, numbers and addresses are personal information under POPIA.
 
-## How a change reaches customers
+## Deploying
 
-1. Work on a feature branch, and run the tests locally.
-2. Merge it into `develop`. Render deploys dev on its own.
-3. Check the change on dev, with staff if it affects them.
-4. Merge `develop` into `main`.
-5. Back up prod: in Neon, create a branch from `main` named after the release, for example `backup-2026-11-20`.
-6. In Render, open `floww-shop-prod` and press **Manual Deploy → Deploy latest commit**. Migrations run when it starts.
-7. If something goes wrong:
-   - In Render, roll back to the previous deploy.
-   - If a migration was the problem, point prod at the backup branch.
+```sh
+export RENDER_API_KEY=...   # both environments
+export NEON_API_KEY=...     # prod: for the backup before each deploy
+
+scripts/deploy.sh dev       # 1. test, push to develop, deploy dev, wait, verify
+                            # 2. check the change on dev
+scripts/deploy.sh prod      # 3. promote that same commit to prod
+scripts/deploy.sh status    # what is running where
+```
+
+**`scripts/deploy.sh dev`:**
+1. Refuses to run if there are uncommitted changes.
+2. Runs lint and the tests.
+3. Fast-forwards `develop` to your current commit.
+4. Tells Render to deploy exactly that commit.
+5. Waits until the deploy is live, and checks `/healthz` reports the commit.
+
+**`scripts/deploy.sh prod`:**
+1. Refuses unless dev is already running the same commit. Only what you checked on dev reaches customers.
+2. Asks you to type `prod`.
+3. Fast-forwards `main`.
+4. Backs up the prod database as a Neon branch named `backup-<date>-<commit>`.
+5. Deploys, waits, and verifies, as for dev.
+
+**If a deploy goes wrong:**
+- Run `scripts/deploy.sh rollback prod` (or `dev`) to put the previous live version back.
+- If the bad version also changed the database, restore the backup branch in the Neon console.
+
+Add `--dry-run` to any command to see what it would do without changing anything.
 
 ## First-time setup
 
-### 1. Neon (database)
+Follow [terraform/README.md](../terraform/README.md):
+1. Create API keys for Render and Neon.
+2. Connect GitHub to Render.
+3. Run `terraform apply` in `environments/dev`, then in `environments/prod`.
+4. Deploy each environment with the script.
 
-1. Create a project in the **Frankfurt** region (AWS eu-central-1).
-2. The project starts with a `main` branch, which is prod. Add a second branch called `dev`.
-3. Copy each branch's pooled connection string. Paste it exactly as Neon shows it. The service accepts `postgres://` and `postgresql://`.
+**Dev** loads sample data on its own. Sign in as `admin@floww.local`, with the password from `terraform output -raw admin_password`.
 
-### 2. GitHub
+**Prod** starts empty. After its first deploy:
+1. Open the Render shell for `floww-shop-prod` and run `flowshop seed --no-orders`.
+2. Sign in and change the password.
+3. Set the real bank details, office address, returns link and collection code.
+4. Add one staff account per person.
 
-The `develop` branch must exist, because Render's dev service deploys from it. It is already pushed.
+## Checks before customers use prod
 
-### 3. Render (servers)
-
-1. **New → Blueprint**, then pick the `flow-shop-bot` repository. Render reads `render.yaml` and creates all four services, with a disk for each web service.
-2. Fill in the values Render asks for:
-
-   | Setting | Dev | Prod |
-   | --- | --- | --- |
-   | `FLOWSHOP_DATABASE_URL` | Neon `dev` string | Neon `main` string |
-   | `FLOWSHOP_BASE_URL` | `https://floww-shop-dev.onrender.com` | `https://floww-shop-prod.onrender.com`, or a custom domain |
-   | `FLOWSHOP_CORS_ORIGINS` | the Netlify preview URL | the live Netlify site |
-   | `FLOWSHOP_WA_BUSINESS_NUMBER` | — | the WhatsApp number, without the plus |
-
-   On each jobs service, set `FLOWSHOP_BASE_URL` to the matching web service's URL. The jobs token is linked automatically.
-3. **Dev** loads sample data on its own. Sign in as `admin@floww.local`. The password is the generated `FLOWSHOP_ADMIN_PASSWORD` in the dev service's **Environment** tab.
-4. **Prod** starts empty. Open the prod service's **Shell** tab and run:
-
-   ```sh
-   FLOWSHOP_ADMIN_PASSWORD='a long password you choose' flowshop seed --no-orders
-   ```
-
-   This loads the four launch products and the admin account. It refuses to load test orders.
-5. **On prod,** sign in, change the password, then set the real bank details, office address, returns link and collection code. Add one staff account per person.
-
-### 4. Checks before customers use prod
-
-- [ ] `/healthz` returns `{"ok": true}` on both environments.
+- [ ] `scripts/deploy.sh status` shows both environments running the same commit.
 - [ ] On dev: a test order reserves stock, and the **+49 h** button releases it.
-- [ ] On dev: a product photo upload survives a redeploy, which proves the disk works.
-- [ ] **Backup restore tested:** restore a Neon backup branch into dev's place, sign in, then point dev back.
-- [ ] Error alerts work: set `FLOWSHOP_SENTRY_DSN` on prod and trigger a test error.
-- [ ] An uptime check (for example UptimeRobot, free) watches prod's `/healthz` every 5 minutes. This also keeps Neon's free plan from pausing the database.
+- [ ] On dev: a product photo survives a redeploy, which proves the disk works.
+- [ ] A backup restore tested on Neon: create a branch from a backup and connect to it.
+- [ ] Error alerts work: add `FLOWSHOP_SENTRY_DSN` to prod's `terraform.tfvars`, apply, then trigger a test error.
+- [ ] An uptime check (for example UptimeRobot, free) watches prod's `/healthz` every 5 minutes.
 
 ## Costs
 
@@ -78,9 +78,9 @@ The `develop` branch must exist, because Render's dev service deploys from it. I
 | Render web service, starter | about $7 a month | about $7 a month |
 | Render cron job | about $1 a month | about $1 a month |
 | Render disk | 1 GB, about $0.25 | 5 GB, about $1.25 |
-| Neon | Free plan covers both branches to start | — |
+| Neon | Free plan to start | Free plan to start; paid recommended before go-live |
 
-That comes to about $18 a month for both environments. Running dev only while you use it, or putting dev on Render's free plan without a disk, halves that. On the free plan, uploaded files on dev disappear on each deploy.
+The total is about $18 a month.
 
 ## Running without Render
 

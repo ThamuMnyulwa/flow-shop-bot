@@ -85,7 +85,8 @@ pending_payment ─proof─▶ proof_received ─staff verify─▶ paid ─▶ 
 
 ## Guides
 
-- [Deploy: dev and prod on Render and Neon](docs/deploy-render.md)
+- [Deploy: dev and prod on Render and Neon](docs/deploy-render.md) (`scripts/deploy.sh dev|prod`)
+- [Infrastructure as code](terraform/README.md)
 - [Run with Docker, locally or on your own server](docs/self-host-docker.md)
 - [Go live on WhatsApp](docs/go-live-whatsapp.md)
 - [Connect the Netlify website](docs/website-integration.md)
