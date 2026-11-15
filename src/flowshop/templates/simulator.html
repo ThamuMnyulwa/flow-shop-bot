@@ -10,38 +10,39 @@
   @media (prefers-color-scheme: dark) { :root { --wa-bg:#0b141a; --wa-in:#202c33; --wa-out:#005c4b; --wa-head:#202c33;
     --wa-ink:#e9edef; --wa-muted:#8696a0; --wa-link:#53bdeb; --wa-line:#2a3942; --page:#111b21; } }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--page); color:var(--wa-ink); }
-  .wrap { max-width:960px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:12px 16px; }
-  @media (min-width:760px) { .wrap { grid-template-columns:220px minmax(0,1fr); } }
-  .side { background:var(--wa-in); border-radius:10px; padding:10px; font-size:14px; }
-  .side h2 { font-size:14px; margin:4px 0 8px; color:var(--wa-muted); font-weight:500; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; font-size:17px; background:var(--page); color:var(--wa-ink); }
+  .wrap { max-width:1040px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr); gap:12px; padding:12px 16px; }
+  @media (min-width:760px) { .wrap { grid-template-columns:240px minmax(0,1fr); } }
+  .side { background:var(--wa-in); border-radius:10px; padding:12px; font-size:16px; }
+  .side h2 { font-size:15px; margin:4px 0 8px; color:var(--wa-muted); font-weight:500; }
   .side a { display:block; padding:8px; border-radius:8px; text-decoration:none; color:var(--wa-ink); }
   .side a.on { background:var(--wa-line); font-weight:600; }
-  .side button, .side input { width:100%; margin-top:6px; padding:7px; border-radius:8px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .side button, .side input { width:100%; margin-top:8px; padding:10px; border-radius:8px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
   .phone { display:flex; flex-direction:column; height:calc(100vh - 24px); min-height:480px; border-radius:10px; overflow:hidden; background:var(--wa-bg); }
-  .head { background:var(--wa-head); color:#fff; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; }
+  .head { background:var(--wa-head); color:#fff; padding:12px 16px; font-size:18px; display:flex; justify-content:space-between; align-items:center; }
   .head small { opacity:.8; }
-  .msgs { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; }
-  .b { max-width:85%; padding:6px 9px 4px; border-radius:8px; font-size:14.5px; white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px .5px rgba(0,0,0,.13); }
+  .msgs { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .b { max-width:min(78%, 460px); padding:8px 12px 6px; border-radius:10px; font-size:17px; line-height:1.4; white-space:pre-wrap; word-wrap:break-word; box-shadow:0 1px .5px rgba(0,0,0,.13); }
   .b.in { align-self:flex-end; background:var(--wa-out); }
   .b.out { align-self:flex-start; background:var(--wa-in); }
-  .b .t { display:block; text-align:right; font-size:11px; color:var(--wa-muted); margin-top:2px; }
-  .b .btns { display:flex; flex-direction:column; margin:6px -9px -4px; border-top:1px solid var(--wa-line); }
-  .b .btns button { background:none; border:0; border-bottom:1px solid var(--wa-line); color:var(--wa-link); padding:9px; font:inherit; cursor:pointer; }
+  .b .t { display:block; text-align:right; font-size:12.5px; color:var(--wa-muted); margin-top:2px; }
+  .b .btns { display:flex; flex-direction:column; margin:8px -12px -6px; border-top:1px solid var(--wa-line); }
+  .b .btns button { background:none; border:0; border-bottom:1px solid var(--wa-line); color:var(--wa-link); padding:11px; font:inherit; font-weight:500; cursor:pointer; }
   .b .btns button:last-child { border-bottom:0; }
   .b .btns button:disabled { color:var(--wa-muted); cursor:default; }
   .b.tpl { border-left:3px solid var(--wa-head); }
   .note { align-self:center; font-size:12px; background:var(--wa-in); color:var(--wa-muted); padding:4px 10px; border-radius:8px; }
-  .bar { display:flex; gap:8px; padding:8px; background:var(--wa-in); align-items:center; }
-  .bar input[type=text] { flex:1; padding:10px 12px; border-radius:20px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
-  .bar button, .bar label { border:0; background:var(--wa-head); color:#fff; border-radius:20px; padding:9px 14px; font:inherit; cursor:pointer; }
+  .bar { display:flex; gap:8px; padding:10px; background:var(--wa-in); align-items:center; }
+  .bar input[type=text] { flex:1; padding:12px 16px; border-radius:20px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
+  .bar button, .bar label { border:0; background:var(--wa-head); color:#fff; border-radius:22px; padding:11px 18px; font:inherit; cursor:pointer; }
   .bar label { background:var(--wa-line); color:var(--wa-ink); }
-  .sheet { position:fixed; inset:0; background:rgba(0,0,0,.4); display:none; align-items:flex-end; justify-content:center; }
+  .sheet { position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:16px; }
   .sheet.open { display:flex; }
-  .sheet .panel { background:var(--wa-in); width:100%; max-width:520px; border-radius:14px 14px 0 0; padding:12px 0; max-height:70vh; overflow-y:auto; }
-  .sheet h3 { margin:0 16px 8px; font-size:16px; }
-  .sheet .row { padding:10px 16px; border-top:1px solid var(--wa-line); cursor:pointer; }
-  .sheet .row small { display:block; color:var(--wa-muted); }
+  .sheet .panel { background:var(--wa-in); width:100%; max-width:460px; border-radius:14px; padding:14px 0 6px; max-height:85vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,.3); }
+  .sheet h3 { margin:0 18px 10px; font-size:18px; }
+  .sheet .row { padding:14px 18px; font-size:17px; border-top:1px solid var(--wa-line); cursor:pointer; }
+  .sheet .row small { display:block; color:var(--wa-muted); font-size:15px; margin-top:2px; }
+  .sheet .close { display:block; width:100%; border:0; border-top:1px solid var(--wa-line); background:none; color:var(--wa-link); padding:14px; font:inherit; cursor:pointer; }
   .sheet .row:hover { background:var(--wa-bg); }
 </style>
 </head>
@@ -54,7 +55,7 @@
     <button onclick="const v=document.getElementById('newwa').value.replace(/\D/g,''); if(v) location='?wa='+v">Add customer</button>
     <button onclick="resetChat()">Reset this chat</button>
     <h2 style="margin-top:14px">Try</h2>
-    <small>"hi" · "notebook" · "Hi, I'd like to order [HW-01]" · "talk to a person" · send a photo as proof of payment</small>
+    <small style="font-size:15px">"hi" · "notebook" · "Hi, I'd like to order [HW-01]" · "talk to a person" · send a photo as proof of payment</small>
     <h2 style="margin-top:14px"><a href="/admin" style="padding:0">Admin page</a></h2>
   </aside>
   <section class="phone">
@@ -73,7 +74,13 @@ const WA = {{ current[0]|tojson }}, NAME = {{ current[1]|tojson }}, CSRF = {{ cs
 let last = 0;
 const msgs = document.getElementById("msgs");
 
+let sending = false;
 async function post(url, body) {
+  if (sending) return;
+  sending = true;
+  try { await send(url, body); } finally { sending = false; }
+}
+async function send(url, body) {
   const opts = { method: "POST", headers: { "X-CSRF-Token": CSRF } };
   if (body instanceof FormData) opts.body = body;
   else { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
@@ -107,19 +114,33 @@ function openList(title, rows) {
   rows.forEach(r => { const row = el("div", "row", r.title); if (r.description) row.append(el("small", null, r.description));
     row.onclick = () => { document.getElementById("sheet").classList.remove("open"); post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: r.id, title: r.title, list_reply: true }); };
     panel.append(row); });
+  const close = el("button", "close", "Close"); close.onclick = () => document.getElementById("sheet").classList.remove("open");
+  panel.append(close);
   document.getElementById("sheet").classList.add("open");
 }
-async function poll() {
-  const r = await fetch(`/simulator/messages?wa_id=${WA}&after=${last}`);
-  if (!r.ok) return;
-  const data = await r.json();
-  document.getElementById("mode").textContent = data.mode === "human" ? "With staff" : "Bot";
-  if (data.messages.length) {
-    data.messages.forEach(render); last = data.messages[data.messages.length - 1].id;
-    msgs.scrollTop = msgs.scrollHeight;
-  }
+let polling = null;
+const shown = new Set();
+function poll() {
+  // One request at a time, and each message is drawn once, however often poll() is called.
+  if (polling) return polling;
+  polling = (async () => {
+    try {
+      const r = await fetch(`/simulator/messages?wa_id=${WA}&after=${last}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      document.getElementById("mode").textContent = data.mode === "human" ? "With staff" : "Bot";
+      let added = false;
+      for (const m of data.messages) {
+        if (shown.has(m.id)) continue;
+        shown.add(m.id); render(m); added = true;
+        last = Math.max(last, m.id);
+      }
+      if (added) msgs.scrollTop = msgs.scrollHeight;
+    } finally { polling = null; }
+  })();
+  return polling;
 }
-async function resetChat() { if (confirm("Clear this chat? Orders stay.")) { await post("/simulator/reset", { wa_id: WA, text: "" }); msgs.replaceChildren(); last = 0; } }
+async function resetChat() { if (confirm("Clear this chat? Orders stay.")) { await post("/simulator/reset", { wa_id: WA, text: "" }); msgs.replaceChildren(); shown.clear(); last = 0; } }
 document.getElementById("bar").onsubmit = e => { e.preventDefault(); const t = document.getElementById("text"); if (!t.value.trim()) return; const v = t.value; t.value = ""; post("/simulator/text", { wa_id: WA, name: NAME, text: v }); };
 document.getElementById("file").onchange = e => { const f = e.target.files[0]; if (!f) return; const fd = new FormData(); fd.append("wa_id", WA); fd.append("name", NAME); fd.append("file", f); e.target.value = ""; post("/simulator/file", fd); };
 poll(); setInterval(poll, 2000);

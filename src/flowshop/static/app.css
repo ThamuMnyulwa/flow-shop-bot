@@ -13,29 +13,29 @@
   }
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); line-height: 1.45; }
+body { margin: 0; background: var(--bg); line-height: 1.5; font-size: 17px; }
 a { color: var(--brand); }
 header.top { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; padding: 10px 16px;
   background: var(--card); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
-header.top .brand { font-weight: 700; color: var(--ink); text-decoration: none; margin-right: auto; }
+header.top .brand { font-size: 19px; font-weight: 700; color: var(--ink); text-decoration: none; margin-right: auto; }
 header.top nav { display: flex; flex-wrap: wrap; gap: 4px 12px; }
-header.top nav a { text-decoration: none; color: var(--ink); font-size: 15px; padding: 4px 0; }
+header.top nav a { text-decoration: none; color: var(--ink); font-size: 16px; padding: 6px 0; }
 header.top nav a.on { color: var(--brand); font-weight: 600; }
-.badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--brand);
-  color: var(--brand-ink); font-size: 12px; text-align: center; line-height: 20px; }
-main { max-width: 1000px; margin: 0 auto; padding: var(--gap); }
-h1 { font-size: 22px; margin: 4px 0 16px; }
-h2 { font-size: 17px; margin: 20px 0 8px; }
+.badge { display: inline-block; min-width: 22px; padding: 0 7px; border-radius: 11px; background: var(--brand);
+  color: var(--brand-ink); font-size: 13px; text-align: center; line-height: 22px; }
+main { max-width: 1080px; margin: 0 auto; padding: var(--gap); }
+h1 { font-size: 26px; margin: 4px 0 18px; }
+h2 { font-size: 19px; margin: 22px 0 10px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
   margin-bottom: var(--gap); }
 .grid { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 .muted { color: var(--muted); }
-.small { font-size: 13px; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.small { font-size: 14.5px; }
+table { width: 100%; border-collapse: collapse; font-size: 16px; }
+th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-weight: 500; }
 .table-wrap { overflow-x: auto; }
-.pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; background: var(--line); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 13.5px; background: var(--line); }
 .pill.ok { background: var(--ok-bg); color: var(--ok); }
 .pill.warn { background: var(--warn-bg); color: var(--warn); }
 .pill.bad { background: var(--bad-bg); color: var(--bad); }
@@ -43,12 +43,12 @@ th { color: var(--muted); font-weight: 500; }
 .flash.ok { background: var(--ok-bg); color: var(--ok); }
 .flash.error { background: var(--bad-bg); color: var(--bad); }
 form.inline { display: inline; }
-label { display: block; font-size: 14px; margin: 10px 0 4px; color: var(--muted); }
-input, select, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+label { display: block; font-size: 15.5px; margin: 10px 0 4px; color: var(--muted); }
+input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px;
   font: inherit; background: var(--bg); color: var(--ink); }
 textarea { min-height: 80px; }
 input[type=checkbox] { width: auto; }
-button, .button { display: inline-block; padding: 9px 14px; border: 0; border-radius: 8px; background: var(--brand);
+button, .button { display: inline-block; padding: 11px 16px; border: 0; border-radius: 8px; background: var(--brand);
   color: var(--brand-ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
 button.secondary, .button.secondary { background: var(--line); color: var(--ink); }
 button.danger { background: var(--bad); }
@@ -56,22 +56,22 @@ button.danger { background: var(--bad); }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .row > * { flex: 1 1 140px; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-.tabs a { padding: 4px 10px; border-radius: 14px; background: var(--card); border: 1px solid var(--line);
-  text-decoration: none; color: var(--ink); font-size: 14px; }
+.tabs a { padding: 6px 12px; border-radius: 16px; background: var(--card); border: 1px solid var(--line);
+  text-decoration: none; color: var(--ink); font-size: 15px; }
 .tabs a.on { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
-.clock { background: var(--warn-bg); color: var(--warn); padding: 6px 16px; font-size: 13px; display: flex;
+.clock { background: var(--warn-bg); color: var(--warn); padding: 8px 16px; font-size: 15px; display: flex;
   gap: 8px; align-items: center; flex-wrap: wrap; }
 .clock form { display: flex; gap: 6px; }
-.clock button { padding: 3px 8px; font-size: 12px; background: var(--warn); }
+.clock button { padding: 5px 10px; font-size: 14px; background: var(--warn); }
 
 /* chat: inbox and simulator */
 .chat { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--bg);
   border-radius: var(--radius); max-height: 60vh; overflow-y: auto; }
-.bubble { max-width: 82%; padding: 8px 10px; border-radius: 10px; white-space: pre-wrap; word-wrap: break-word;
-  font-size: 14px; background: var(--card); border: 1px solid var(--line); }
+.bubble { max-width: min(82%, 520px); padding: 10px 12px; border-radius: 10px; white-space: pre-wrap; word-wrap: break-word;
+  font-size: 16.5px; background: var(--card); border: 1px solid var(--line); }
 .bubble.in { align-self: flex-start; }
 .bubble.out { align-self: flex-end; background: var(--ok-bg); }
-.bubble .meta { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; }
+.bubble .meta { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
 .bubble .opts { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
 .bubble .opts span { border-top: 1px solid var(--line); padding-top: 4px; color: var(--brand); text-align: center; }
 .grid.split { grid-template-columns: minmax(0, 1fr); }

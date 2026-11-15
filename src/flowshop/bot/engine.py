@@ -165,8 +165,6 @@ class Bot:
                 self.browse()
             case "human":
                 self.handoff("Asked for a person")
-            case "cat":
-                self.product_list(int(arg))
             case "more":
                 cat, _, offset = arg.partition(",")
                 self.product_list(int(cat) if cat else None, int(offset))
@@ -271,12 +269,8 @@ class Bot:
                          ("browse", "Browse products"), cart_label, ("human", "Talk to a person")))
 
     def browse(self) -> None:
-        cats = catalogue.categories_with_products(self.db)
-        if len(cats) <= 1:
-            return self.product_list(None)
-        self.go("browse")
-        rows = [Row(f"cat:{c.id}", c.name) for c in cats[:10]]
-        self.say(menu_list("What are you looking for?", rows, "Categories"))
+        """Straight to the product list: with a small catalogue, a category step only costs a message."""
+        self.product_list(None)
 
     def product_list(self, category_id: int | None, offset: int = 0) -> None:
         products = catalogue.visible_products(self.db, category_id)

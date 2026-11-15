@@ -12,7 +12,7 @@
     <label for="name">Name (24 characters at most)</label><input id="name" name="name" value="{{ product.name if product }}" maxlength="24" required>
     <label for="description">Short description (72 characters at most)</label><input id="description" name="description" value="{{ product.description if product }}" maxlength="72">
     <div class="row">
-      <div><label for="category">Category</label><input id="category" name="category" list="cats" value="{{ product.category.name if product and product.category }}" maxlength="24">
+      <div><label for="category">Category (optional)</label><input id="category" name="category" list="cats" value="{{ product.category.name if product and product.category }}" maxlength="24">
         <datalist id="cats">{% for c in categories %}<option value="{{ c.name }}">{% endfor %}</datalist></div>
       <div><label for="status">Status</label><select id="status" name="status">
         {% for s in statuses %}<option value="{{ s.value }}" {{ 'selected' if product and product.status == s }}>{{ s|status }}</option>{% endfor %}

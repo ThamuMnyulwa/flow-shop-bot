@@ -39,9 +39,8 @@ def test_browse_to_confirmed_order_within_ten_messages(client):
     out = c.say("hi")
     assert "Welcome to FLOWW" in texts(out)
     out = c.tap("Browse products")
-    assert out[-1]["kind"] == "list"  # four categories
-    out = c.tap("Fashion")
-    rows = out[-1]["payload"]["rows"]
+    rows = out[-1]["payload"]["rows"]  # straight to the products, no category step
+    assert [r["title"] for r in rows] == ["Headwrap", "Notebook", "Shea Butter Cream", "FLOWW Mug"]
     assert rows[0]["title"] == "Headwrap" and "10 available" in rows[0]["description"]
     c.tap("Headwrap")
     c.tap("Add to order")
@@ -102,7 +101,6 @@ def test_edit_and_remove_items(client):
     c.tap("Add to order")
     c.tap("2")
     c.tap("Add more")
-    c.tap("Stationery")
     c.tap("Notebook")
     c.tap("Add to order")
     out = c.tap("1")

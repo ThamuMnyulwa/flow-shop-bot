@@ -3,7 +3,7 @@ import re
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from flowshop.models import Category, Product, ProductStatus
+from flowshop.models import Product, ProductStatus
 
 VISIBLE = (ProductStatus.ON_SALE, ProductStatus.LAUNCHING_SOON)
 CODE_PATTERN = re.compile(r"\[?\b([A-Z]{2,5}-\d{1,4})\b\]?", re.IGNORECASE)
@@ -14,12 +14,6 @@ def visible_products(db: Session, category_id: int | None = None) -> list[Produc
     if category_id is not None:
         stmt = stmt.where(Product.category_id == category_id)
     return list(db.scalars(stmt.order_by(Product.sort_order, Product.name)))
-
-
-def categories_with_products(db: Session) -> list[Category]:
-    stmt = (select(Category).join(Product).where(Product.status.in_(VISIBLE)).group_by(Category.id)
-            .order_by(Category.sort_order, Category.name))
-    return list(db.scalars(stmt))
 
 
 STOP_WORDS = {
