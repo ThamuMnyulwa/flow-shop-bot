@@ -42,6 +42,8 @@ class OutMessage:
     section_title: str = "Options"
     template_name: str = ""
     template_params: list[str] = field(default_factory=list)
+    image_url: str = ""  # a public URL; WhatsApp shows the image above the text and buttons
+    image_path: str = ""  # the same image as a site path, for the simulator and the inbox
 
     def validate(self) -> "OutMessage":
         if self.kind == "text" and len(self.text) > MAX_TEXT_BODY:
@@ -70,7 +72,8 @@ class OutMessage:
             "buttons": [{"id": b.id, "title": b.title} for b in self.buttons],
             "rows": [{"id": r.id, "title": r.title, "description": r.description} for r in self.rows],
             "list_button": self.list_button, "template_name": self.template_name,
-            "template_params": self.template_params,
+            "template_params": self.template_params, "image_url": self.image_url,
+            "image_path": self.image_path,
         }
 
 
@@ -78,8 +81,11 @@ def text(body: str) -> OutMessage:
     return OutMessage("text", body).validate()
 
 
-def buttons(body: str, *items: tuple[str, str]) -> OutMessage:
-    return OutMessage("buttons", body, buttons=[Button(i, t) for i, t in items]).validate()
+def buttons(body: str, *items: tuple[str, str], image: tuple[str, str] | None = None) -> OutMessage:
+    """Reply buttons, optionally under a photo. `image` is (public URL, site path)."""
+    url, path = image or ("", "")
+    return OutMessage("buttons", body, buttons=[Button(i, t) for i, t in items], image_url=url,
+                      image_path=path).validate()
 
 
 def menu_list(body: str, rows: list[Row], list_button: str = "Choose") -> OutMessage:

@@ -76,3 +76,9 @@ button.danger { background: var(--bad); }
 .bubble .opts span { border-top: 1px solid var(--line); padding-top: 4px; color: var(--brand); text-align: center; }
 .grid.split { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 760px) { .grid.split { grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); } }
+.bubble-photo { display: block; width: 220px; max-width: 100%; aspect-ratio: 1 / 1; object-fit: cover;
+  border-radius: 8px; margin-bottom: 8px; }
+.thumb { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--line); display: block; }
+.thumb.empty { display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--muted); text-align: center; }
+.product-photo { width: 100%; max-width: 280px; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block;
+  margin-bottom: 10px; background: var(--line); }

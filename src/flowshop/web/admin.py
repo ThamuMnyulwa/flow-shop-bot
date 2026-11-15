@@ -227,16 +227,21 @@ def product_stock(product_id: int, request: Request, on_hand: int = Form(...), n
 async def product_image(product_id: int, request: Request, image: UploadFile = File(...),
                         db: Session = Depends(get_db), staff: Staff = Depends(current_staff)):
     product = db.get(Product, product_id) or _404()
-    if image.content_type not in ("image/jpeg", "image/png", "image/webp"):
-        flash(request, "Use a JPEG, PNG or WebP image.", "error")
-        return back(f"/admin/products/{product_id}")
     data = await image.read()
-    if len(data) > 5 * 1024 * 1024:
-        flash(request, "Images must be under 5 MB.", "error")
+    # Check the file itself, not just its name: WhatsApp accepts JPEG and PNG photos up to 5 MB.
+    if data.startswith(b"\xff\xd8\xff"):
+        content_type = "image/jpeg"
+    elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+        content_type = "image/png"
+    else:
+        flash(request, "Use a JPEG or PNG photo.", "error")
         return back(f"/admin/products/{product_id}")
-    product.image_key = get_storage().put("products", data, image.content_type)
+    if len(data) > 5 * 1024 * 1024:
+        flash(request, "Photos must be under 5 MB.", "error")
+        return back(f"/admin/products/{product_id}")
+    product.image_key = get_storage().put("products", data, content_type)
     product.updated_at = clock.now(db)
-    flash(request, "Image updated.")
+    flash(request, "Photo saved. Customers see it in WhatsApp and on the website.")
     return back(f"/admin/products/{product_id}")
 
 

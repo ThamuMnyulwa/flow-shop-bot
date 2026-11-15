@@ -41,12 +41,14 @@
     </form>
   </div>
   <div class="card">
-    <h2 style="margin-top:0">Image</h2>
-    {% if product.image_key %}<img src="/api/images/{{ product.image_key }}" alt="{{ product.name }}" style="max-width:160px;border-radius:8px">{% endif %}
+    <h2 style="margin-top:0">Photo</h2>
+    {% if product.image_key %}<img class="product-photo" src="/api/images/{{ product.image_key }}" alt="{{ product.name }}">
+    {% else %}<p class="muted small">No photo yet. Customers see the photo in WhatsApp when they open this product, and on the website.</p>{% endif %}
     <form method="post" action="/admin/products/{{ product.id }}/image" enctype="multipart/form-data">
       <input type="hidden" name="csrf" value="{{ csrf }}">
-      <input type="file" name="image" accept="image/jpeg,image/png,image/webp" required>
-      <div class="actions"><button class="secondary">Upload</button></div>
+      <input type="file" name="image" accept="image/jpeg,image/png" required>
+      <p class="small muted">JPEG or PNG, under 5 MB. A square photo looks best.</p>
+      <div class="actions"><button class="secondary">{{ "Replace photo" if product.image_key else "Upload photo" }}</button></div>
     </form>
   </div>
 </div>

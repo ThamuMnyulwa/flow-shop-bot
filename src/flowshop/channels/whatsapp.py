@@ -23,6 +23,11 @@ class WhatsAppChannel(Channel):
         message.validate()
         if message.kind == "text":
             sent = self.client.send_message(to=to, text=message.text)
+        elif message.kind == "buttons" and message.image_url:
+            sent = self.client.send_image(
+                to=to, image=message.image_url, caption=message.text,
+                buttons=[Button(title=b.title, callback_data=b.id) for b in message.buttons],
+            )
         elif message.kind == "buttons":
             sent = self.client.send_message(
                 to=to, text=message.text, buttons=[Button(title=b.title, callback_data=b.id) for b in message.buttons]

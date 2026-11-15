@@ -4,9 +4,10 @@
 <div class="actions" style="margin:0 0 12px"><a class="button" href="/admin/products/new">Add product</a></div>
 <div class="card table-wrap">
 <table>
-  <tr><th>Product</th><th>Price</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Status</th></tr>
+  <tr><th></th><th>Product</th><th>Price</th><th>On hand</th><th>Reserved</th><th>Available</th><th>Status</th></tr>
   {% for p in products %}
   <tr>
+    <td style="width:56px"><a href="/admin/products/{{ p.id }}">{% if p.image_key %}<img class="thumb" src="/api/images/{{ p.image_key }}" alt="{{ p.name }}">{% else %}<span class="thumb empty">No photo</span>{% endif %}</a></td>
     <td><a href="/admin/products/{{ p.id }}">{{ p.name }}</a><br><span class="small muted">{{ p.code }}{% if p.category %} · {{ p.category.name }}{% endif %}</span></td>
     <td>{{ p.price_cents|rand }}</td>
     <td>{{ p.on_hand }}</td>

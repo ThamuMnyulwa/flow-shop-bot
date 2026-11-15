@@ -22,7 +22,6 @@ def whatsapp_link(product: Product) -> str:
 
 
 def product_json(product: Product) -> dict:
-    base = get_settings().base_url
     return {
         "code": product.code,
         "name": product.name,
@@ -34,7 +33,7 @@ def product_json(product: Product) -> dict:
         "availability": catalogue.availability_label(product),
         "orderable": product.orderable and product.available > 0,
         "category": product.category.name if product.category else None,
-        "image_url": f"{base}/api/images/{product.image_key}" if product.image_key else None,
+        "image_url": catalogue.image(product)[0] if product.image_key else None,
         "order_url": whatsapp_link(product),
     }
 

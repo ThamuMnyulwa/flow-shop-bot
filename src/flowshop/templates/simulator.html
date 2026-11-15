@@ -31,6 +31,7 @@
   .b .btns button:last-child { border-bottom:0; }
   .b .btns button:disabled { color:var(--wa-muted); cursor:default; }
   .b.tpl { border-left:3px solid var(--wa-head); }
+  .b .photo { display:block; width:calc(100% + 16px); max-width:none; margin:-4px -8px 8px; border-radius:8px; aspect-ratio:1/1; object-fit:cover; background:var(--wa-line); }
   .note { align-self:center; font-size:12px; background:var(--wa-in); color:var(--wa-muted); padding:4px 10px; border-radius:8px; }
   .bar { display:flex; gap:8px; padding:10px; background:var(--wa-in); align-items:center; }
   .bar input[type=text] { flex:1; padding:12px 16px; border-radius:20px; border:1px solid var(--wa-line); background:var(--wa-bg); color:var(--wa-ink); font:inherit; }
@@ -93,6 +94,11 @@ function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.
 
 function render(m) {
   const b = el("div", "b " + m.direction + (m.kind === "template" ? " tpl" : ""));
+  if (m.payload && m.payload.image_path) {
+    const img = el("img", "photo"); img.src = m.payload.image_path; img.alt = "";
+    img.onload = () => { msgs.scrollTop = msgs.scrollHeight; };
+    b.append(img);
+  }
   if (m.kind === "image" || m.kind === "document") b.append(el("em", null, m.kind === "image" ? "📷 Photo" : "📄 Document"));
   else b.append(document.createTextNode(m.text));
   const p = m.payload || {};

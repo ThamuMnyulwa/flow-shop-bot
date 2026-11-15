@@ -18,6 +18,10 @@ class FakePyWa:
         self.calls.append(("send_message", kwargs))
         return SimpleNamespace(id="wamid.OUT1")
 
+    def send_image(self, **kwargs):
+        self.calls.append(("send_image", kwargs))
+        return SimpleNamespace(id="wamid.OUT3")
+
     def send_template(self, **kwargs):
         self.calls.append(("send_template", kwargs))
         return SimpleNamespace(id="wamid.OUT2")
@@ -46,6 +50,15 @@ def test_reply_buttons(wa):
     channel.send("2782", base.buttons("Pick", ("a", "One"), ("b", "Two")))
     sent = fake.calls[0][1]["buttons"]
     assert all(isinstance(b, Button) for b in sent) and [b.callback_data for b in sent] == ["a", "b"]
+
+
+def test_buttons_under_a_product_photo(wa):
+    channel, fake = wa
+    photo = ("https://shop.example/api/images/products/a.png", "/api/images/products/a.png")
+    channel.send("2782", base.buttons("*Headwrap* · R100", ("add:1", "Add to order"), image=photo))
+    name, kwargs = fake.calls[0]
+    assert name == "send_image" and kwargs["image"] == photo[0] and kwargs["caption"] == "*Headwrap* · R100"
+    assert [b.callback_data for b in kwargs["buttons"]] == ["add:1"]
 
 
 def test_list(wa):

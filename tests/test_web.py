@@ -309,3 +309,46 @@ def test_time_travel_button_releases_overdue(staff_client):
 
 def test_health(client):
     assert client.get("/healthz").json() == {"ok": True}
+
+
+# ----- product photos -------------------------------------------------------------
+
+PNG = (b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+       b"\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82")
+
+
+def upload_photo(staff_client, code, data=PNG, name="photo.png", content_type="image/png"):
+    s = new_session()
+    pid = s.scalar(select(Product.id).where(Product.code == code))
+    s.close()
+    return staff_client.post(f"/admin/products/{pid}/image", files={"image": (name, data, content_type)},
+                             follow_redirects=True)
+
+
+def test_photo_upload_shows_in_chat_api_and_admin(staff_client):
+    assert "Photo saved" in upload_photo(staff_client, "HW-01").text
+    api = staff_client.get("/api/products/HW-01").json()
+    assert api["image_url"].startswith("http") and "/api/images/products/" in api["image_url"]
+    path = "/api/images/" + api["image_url"].split("/api/images/")[1]
+    img = staff_client.get(path)
+    assert img.status_code == 200 and img.headers["content-type"] == "image/png" and img.content == PNG
+    assert 'class="thumb" src="/api/images/products/' in staff_client.get("/admin/products").text
+
+    c = SimCustomer(staff_client)
+    out = c.say("[HW-01]")
+    product_msg = out[-1]
+    assert product_msg["payload"]["image_path"] == path and "*Headwrap*" in product_msg["text"]
+    assert [b["title"] for b in product_msg["payload"]["buttons"]] == ["Add to order", "Other products"]
+    c.tap("Add to order")  # the buttons under the photo still work
+
+
+def test_product_without_photo_is_plain_text(staff_client):
+    c = SimCustomer(staff_client)
+    out = c.say("[NB-01]")
+    assert out[-1]["payload"]["image_path"] == ""
+
+
+def test_photo_upload_rejects_non_images(staff_client):
+    r = upload_photo(staff_client, "HW-01", data=b"<svg>not a photo</svg>", name="x.png")
+    assert "Use a JPEG or PNG photo" in r.text
+    assert staff_client.get("/api/products/HW-01").json()["image_url"] is None

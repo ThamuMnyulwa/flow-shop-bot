@@ -295,12 +295,13 @@ class Bot:
         self.data["product"] = p.id
         self.go("product")
         body = f"*{p.name}* · {rand(p.price_cents)}\n{p.description}\n\n{catalogue.availability_label(p)}"
+        photo = catalogue.image(p)  # shown above the text, so the customer sees what they're buying
         if not p.orderable:
             return self.say(buttons(body + "\nWe can't take orders for it yet.",
-                                    ("browse", "Other products"), ("menu", "Main menu")))
+                                    ("browse", "Other products"), ("menu", "Main menu"), image=photo))
         if p.available <= 0:
-            return self.say(buttons(body, ("browse", "Other products"), ("human", "Talk to a person")))
-        self.say(buttons(body, (f"add:{p.id}", "Add to order"), ("browse", "Other products")))
+            return self.say(buttons(body, ("browse", "Other products"), ("human", "Talk to a person"), image=photo))
+        self.say(buttons(body, (f"add:{p.id}", "Add to order"), ("browse", "Other products"), image=photo))
 
     # ----- building the order (B4) -----------------------------------------
 

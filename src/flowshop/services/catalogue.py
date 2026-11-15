@@ -3,6 +3,7 @@ import re
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from flowshop.config import get_settings
 from flowshop.models import Product, ProductStatus
 
 VISIBLE = (ProductStatus.ON_SALE, ProductStatus.LAUNCHING_SOON)
@@ -53,3 +54,11 @@ def availability_label(product: Product) -> str:
     if product.available <= 0:
         return "Sold out"
     return f"{product.available} available"
+
+
+def image(product: Product) -> tuple[str, str] | None:
+    """The product photo as (public URL for WhatsApp, site path for the simulator and inbox)."""
+    if not product.image_key:
+        return None
+    path = f"/api/images/{product.image_key}"
+    return f"{get_settings().base_url}{path}", path
