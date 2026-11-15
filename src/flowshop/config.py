@@ -27,14 +27,21 @@ class Settings(BaseSettings):
     wa_template_payment_reminder: str = "payment_reminder"
     wa_template_language: str = "en"
 
+    # Run migrations when the container starts. Off on Cloud Run, where a migration job runs once per deploy.
+    migrate_on_start: bool = True
+
     # Scheduled work (E12).
     jobs_token: str = "dev-jobs-token"
 
     # Time travel for testing expiry and dispatch dates (E8). Never on in production.
     allow_time_travel: bool = False
 
+    # The commit this image was built from, baked in by the Dockerfile (FLOWSHOP_VERSION build argument).
+    version: str = ""
+
     # Storage for product images and proof-of-payment files.
-    storage_backend: str = "local"  # local or s3
+    storage_backend: str = "local"  # local, gcs or s3
+    gcs_bucket: str = ""
     storage_dir: str = "var/storage"
     s3_bucket: str = ""
     s3_endpoint_url: str = ""

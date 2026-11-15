@@ -1,25 +1,25 @@
-# Dev: deployed with scripts/deploy.sh dev, from the `develop` branch, with sample data, the test clock and the
-# simulator.
-# Never holds real customer data.
+# Dev: sample data, the test clock and the simulator. Deployed with scripts/deploy.sh dev. Never holds real
+# customer data.
 
 module "environment" {
   source = "../../modules/environment"
 
-  environment       = "dev"
-  name              = "floww-shop-dev"
-  repo_url          = var.repo_url
-  branch            = "develop"
-  auto_deploy       = false # every deploy goes through scripts/deploy.sh, which checks it
-  disk_size_gb      = 1
-  cors_origins      = var.cors_origins
-  allow_time_travel = true
-  seed_on_start     = true
+  environment              = "dev"
+  name                     = "floww-shop-dev"
+  project_id               = var.project_id
+  region                   = var.region
+  cors_origins             = var.cors_origins
+  allow_time_travel        = true
+  seed_on_deploy           = true
+  min_instances            = 0
+  max_instances            = 2
+  jobs_schedule            = "0 * * * *" # hourly: dev has no real orders, and Neon's free plan stays free
+  database_history_seconds = 21600       # the free plan's limit
+  deletion_protection      = false       # dev can be torn down and rebuilt
 
-  extra_env_vars = merge(
-    {
-      FLOWSHOP_CHANNEL            = "simulator"
-      FLOWSHOP_WA_BUSINESS_NUMBER = "27000000000"
-    },
-    var.extra_env_vars,
-  )
+  settings = {
+    FLOWSHOP_CHANNEL            = "simulator"
+    FLOWSHOP_WA_BUSINESS_NUMBER = "27000000000"
+  }
+  secrets = var.secrets
 }

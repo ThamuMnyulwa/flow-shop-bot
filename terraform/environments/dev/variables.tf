@@ -1,7 +1,12 @@
-variable "repo_url" {
-  description = "GitHub repository Render builds from."
+variable "project_id" {
+  description = "Google Cloud project that holds both environments (the same one as in environments/shared)."
   type        = string
-  default     = "https://github.com/ThamuMnyulwa/flow-shop-bot"
+}
+
+variable "region" {
+  description = "Google Cloud region, next to Neon's Frankfurt region."
+  type        = string
+  default     = "europe-west3"
 }
 
 variable "cors_origins" {
@@ -10,7 +15,7 @@ variable "cors_origins" {
   default     = ""
 }
 
-variable "extra_env_vars" {
+variable "secrets" {
   description = "Further secret settings, e.g. WhatsApp credentials or FLOWSHOP_SENTRY_DSN. Set in terraform.tfvars."
   type        = map(string)
   default     = {}

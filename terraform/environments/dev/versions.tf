@@ -2,9 +2,9 @@ terraform {
   required_version = "~> 1.9"
 
   required_providers {
-    render = {
-      source  = "render-oss/render"
-      version = "~> 1.9"
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 8.11"
     }
     neon = {
       source  = "kislerdm/neon"
@@ -16,19 +16,19 @@ terraform {
     }
   }
 
-  # State stays on this machine for now, one file per environment, and is never committed (it holds secrets).
-  # To share it later, move to a remote backend such as Terraform Cloud or an S3/R2 bucket.
+  # State stays on this machine, one file per environment, never committed: it holds secrets.
+  # Move to a GCS backend once more than one person runs Terraform.
   backend "local" {
     path = "terraform.tfstate"
   }
 }
 
-# Credentials come from the environment, never from files in git:
-#   RENDER_API_KEY, RENDER_OWNER_ID  (Render dashboard → Account settings → API keys)
-#   NEON_API_KEY                     (Neon console → Account settings → API keys)
-provider "render" {
-  # Don't block `terraform apply` while Render builds; scripts/deploy.sh watches deploys instead.
-  wait_for_deploy_completion = false
+# Credentials come from your machine, never from files in git:
+#   gcloud auth application-default login     (Google Cloud)
+#   export NEON_API_KEY=...                   (Neon console → Account settings → API keys)
+provider "google" {
+  project = var.project_id
+  region  = var.region
 }
 
 provider "neon" {}

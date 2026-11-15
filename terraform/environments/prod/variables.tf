@@ -1,7 +1,12 @@
-variable "repo_url" {
-  description = "GitHub repository Render builds from."
+variable "project_id" {
+  description = "Google Cloud project that holds both environments (the same one as in environments/shared)."
   type        = string
-  default     = "https://github.com/ThamuMnyulwa/flow-shop-bot"
+}
+
+variable "region" {
+  description = "Google Cloud region, next to Neon's Frankfurt region."
+  type        = string
+  default     = "europe-west3"
 }
 
 variable "cors_origins" {
@@ -10,7 +15,7 @@ variable "cors_origins" {
   default     = ""
 }
 
-variable "extra_env_vars" {
+variable "secrets" {
   description = "Further secret settings, e.g. WhatsApp credentials or FLOWSHOP_SENTRY_DSN. Set in terraform.tfvars."
   type        = map(string)
   default     = {}
@@ -18,9 +23,21 @@ variable "extra_env_vars" {
 }
 
 variable "base_url" {
-  description = "Public address, e.g. https://shop-api.floww.co.za once a custom domain is set. Empty uses onrender.com."
+  description = "Public address once a custom domain is mapped, e.g. https://shop-api.floww.co.za. Empty uses Cloud Run's."
   type        = string
   default     = ""
+}
+
+variable "min_instances" {
+  description = "0 scales to zero (cheapest). 1 keeps an instance warm for fast first replies, about $10-14 a month."
+  type        = number
+  default     = 0
+}
+
+variable "database_history_seconds" {
+  description = "Neon restore window. 21600 (6 hours) on the free plan; up to 604800 (7 days) on Launch."
+  type        = number
+  default     = 21600
 }
 
 variable "whatsapp_live" {

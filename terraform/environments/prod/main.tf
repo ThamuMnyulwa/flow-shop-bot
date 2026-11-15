@@ -1,24 +1,25 @@
-# Prod: real customers and real stock. Deploys only through scripts/deploy.sh prod, after a database backup.
+# Prod: real customers and real stock. Deployed only with scripts/deploy.sh prod, after a database backup.
 
 module "environment" {
   source = "../../modules/environment"
 
-  environment       = "production"
-  name              = "floww-shop-prod"
-  repo_url          = var.repo_url
-  branch            = "main"
-  auto_deploy       = false
-  disk_size_gb      = 5
-  base_url          = var.base_url
-  cors_origins      = var.cors_origins
-  allow_time_travel = false
-  seed_on_start     = false
+  environment              = "production"
+  name                     = "floww-shop-prod"
+  project_id               = var.project_id
+  region                   = var.region
+  base_url                 = var.base_url
+  cors_origins             = var.cors_origins
+  allow_time_travel        = false
+  seed_on_deploy           = false
+  min_instances            = var.min_instances
+  max_instances            = 3
+  jobs_schedule            = "*/15 * * * *"
+  database_history_seconds = var.database_history_seconds
+  deletion_protection      = true
 
-  extra_env_vars = merge(
-    {
-      FLOWSHOP_CHANNEL            = var.whatsapp_live ? "whatsapp" : "simulator"
-      FLOWSHOP_WA_BUSINESS_NUMBER = var.wa_business_number
-    },
-    var.extra_env_vars,
-  )
+  settings = {
+    FLOWSHOP_CHANNEL            = var.whatsapp_live ? "whatsapp" : "simulator"
+    FLOWSHOP_WA_BUSINESS_NUMBER = var.wa_business_number
+  }
+  secrets = var.secrets
 }

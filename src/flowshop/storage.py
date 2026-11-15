@@ -43,6 +43,23 @@ class LocalStorage(Storage):
         return self._path(key).read_bytes()
 
 
+class GCSStorage(Storage):
+    """Google Cloud Storage. On Cloud Run it signs in as the service's own account, so there are no keys to manage."""
+
+    def __init__(self, bucket: str):
+        from google.cloud import storage
+
+        self.bucket = storage.Client().bucket(bucket)
+
+    def put(self, prefix: str, data: bytes, content_type: str) -> str:
+        key = self.new_key(prefix, content_type)
+        self.bucket.blob(key).upload_from_string(data, content_type=content_type)
+        return key
+
+    def get(self, key: str) -> bytes:
+        return self.bucket.blob(key).download_as_bytes()
+
+
 class S3Storage(Storage):
     """Works with AWS S3, Cloudflare R2, Google Cloud Storage interop and Azure via an S3 gateway."""
 
@@ -64,6 +81,8 @@ class S3Storage(Storage):
 @lru_cache
 def get_storage() -> Storage:
     s = get_settings()
+    if s.storage_backend == "gcs":
+        return GCSStorage(s.gcs_bucket)
     if s.storage_backend == "s3":
         return S3Storage(s.s3_bucket, s.s3_endpoint_url, s.s3_region)
     return LocalStorage(s.storage_dir)

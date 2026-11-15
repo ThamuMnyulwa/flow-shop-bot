@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -55,14 +54,19 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz")
     def health():
+        """Liveness, without touching the database, so health checks and uptime monitors never keep Neon awake.
+        `version` is the commit built into the image; scripts/deploy.sh checks it after each deploy."""
+        return {"ok": True, "version": settings.version}
+
+    @app.get("/healthz/db")
+    def health_db():
         from sqlalchemy import text
 
         from flowshop.db import session_scope
 
         with session_scope() as db:
             db.execute(text("SELECT 1"))
-        # Render sets RENDER_GIT_COMMIT; scripts/deploy.sh checks it to confirm which commit is live.
-        return {"ok": True, "version": os.environ.get("RENDER_GIT_COMMIT", "")}
+        return {"ok": True, "version": settings.version}
 
     return app
 

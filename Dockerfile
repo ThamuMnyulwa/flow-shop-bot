@@ -10,6 +10,9 @@ COPY README.md ./
 RUN uv sync --frozen --no-dev
 
 FROM python:3.13-slim
+# The commit this image is built from, reported by /healthz so a deploy can be verified.
+ARG FLOWSHOP_VERSION=""
+ENV FLOWSHOP_VERSION=$FLOWSHOP_VERSION
 RUN useradd --create-home --uid 1000 app
 WORKDIR /app
 # Local file storage lives here. Creating it as the app user means a mounted volume inherits that owner.
@@ -24,7 +27,8 @@ EXPOSE 8000
 # The entrypoint fixes ownership of a mounted storage disk, then drops to the app user.
 ENTRYPOINT ["docker-entrypoint.sh"]
 HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\"PORT\"]}/healthz')"
-# Migrations run on start, so a deploy and its schema change go out together (E5).
-# FLOWSHOP_SEED_ON_START=true (dev only) loads the sample catalogue, staff account and test orders; it is idempotent
-# and refuses to run in production.
-CMD ["sh", "-c", "flowshop migrate && if [ \"$FLOWSHOP_SEED_ON_START\" = true ]; then flowshop seed; fi && flowshop serve --host $HOST --port $PORT"]
+# Migrations run on start unless FLOWSHOP_MIGRATE_ON_START=false. On Cloud Run they run once per deploy as a
+# job instead, so cold starts stay fast (E5).
+# FLOWSHOP_SEED_ON_START=true (local only) loads the sample catalogue, staff account and test orders; it is
+# idempotent and refuses to run in production.
+CMD ["sh", "-c", "if [ \"$FLOWSHOP_MIGRATE_ON_START\" != false ]; then flowshop migrate; fi && if [ \"$FLOWSHOP_SEED_ON_START\" = true ]; then flowshop seed; fi && flowshop serve --host $HOST --port $PORT"]

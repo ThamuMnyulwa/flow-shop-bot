@@ -297,6 +297,8 @@ def test_jobs_endpoint_needs_token(client):
     assert client.post("/jobs/run").status_code == 401
     r = client.post("/jobs/run", headers={"Authorization": "Bearer test-jobs-token"})
     assert r.status_code == 200 and r.json() == {"reminded": [], "released": []}
+    assert client.post("/jobs/run", headers={"X-Jobs-Token": "test-jobs-token"}).status_code == 200
+    assert client.post("/jobs/run", headers={"X-Jobs-Token": "wrong"}).status_code == 401
 
 
 def test_time_travel_button_releases_overdue(staff_client):

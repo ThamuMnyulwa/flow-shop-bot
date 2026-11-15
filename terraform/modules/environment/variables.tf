@@ -9,29 +9,19 @@ variable "environment" {
 }
 
 variable "name" {
-  description = "Base name for the Render services and the Neon project, e.g. floww-shop-dev."
+  description = "Base name for every resource in this environment, e.g. floww-shop-dev."
   type        = string
 }
 
-variable "repo_url" {
-  description = "GitHub repository Render builds from."
+variable "project_id" {
+  description = "Google Cloud project that holds both environments."
   type        = string
-}
-
-variable "branch" {
-  description = "Git branch this environment deploys from."
-  type        = string
-}
-
-variable "auto_deploy" {
-  description = "Deploy on every push to the branch. Off in both environments: deploys go through scripts/deploy.sh."
-  type        = bool
 }
 
 variable "region" {
-  description = "Render region. Frankfurt is nearest to South Africa and to Neon's Frankfurt region."
+  description = "Google Cloud region. Frankfurt sits next to Neon's Frankfurt region, which keeps database calls fast."
   type        = string
-  default     = "frankfurt"
+  default     = "europe-west3"
 }
 
 variable "neon_region" {
@@ -40,26 +30,32 @@ variable "neon_region" {
   default     = "aws-eu-central-1"
 }
 
-variable "plan" {
-  description = "Render instance plan for the web service. A disk needs a paid plan."
-  type        = string
-  default     = "starter"
-}
-
-variable "disk_size_gb" {
-  description = "Disk for product photos and proof-of-payment files."
-  type        = number
-  default     = 1
-}
-
 variable "database_history_seconds" {
-  description = "How far back Neon can restore the database. The free plan allows up to 6 hours."
+  description = "How far back Neon can restore the database. The free plan allows up to 6 hours; Launch up to 7 days."
   type        = number
   default     = 21600
 }
 
+variable "max_instances" {
+  description = "Upper limit of Cloud Run instances, a cap on cost if something goes wrong."
+  type        = number
+  default     = 3
+}
+
+variable "min_instances" {
+  description = "Instances kept warm. 0 scales to zero (cheapest); 1 avoids a slow first reply after a quiet spell."
+  type        = number
+  default     = 0
+}
+
+variable "jobs_schedule" {
+  description = "Cron schedule for payment reminders and the 48-hour release (Africa/Johannesburg time)."
+  type        = string
+  default     = "*/15 * * * *"
+}
+
 variable "base_url" {
-  description = "Public address of the web service. Leave empty for https://<name>.onrender.com."
+  description = "Public address, e.g. a custom domain. Leave empty for the Cloud Run address."
   type        = string
   default     = ""
 }
@@ -76,21 +72,27 @@ variable "allow_time_travel" {
   default     = false
 }
 
-variable "seed_on_start" {
-  description = "Load sample products, a test admin and test orders on start. Dev only."
+variable "seed_on_deploy" {
+  description = "The migration job also loads sample products, a test admin and test orders. Dev only."
   type        = bool
   default     = false
 }
 
-variable "jobs_schedule" {
-  description = "Cron schedule for payment reminders and the 48-hour release."
-  type        = string
-  default     = "*/15 * * * *"
+variable "settings" {
+  description = "Further non-secret settings, e.g. FLOWSHOP_CHANNEL and FLOWSHOP_WA_BUSINESS_NUMBER."
+  type        = map(string)
+  default     = {}
 }
 
-variable "extra_env_vars" {
-  description = "Further settings, such as the WhatsApp channel and its credentials. Values are secret."
+variable "secrets" {
+  description = "Further secret settings, e.g. WhatsApp credentials. Stored in Secret Manager."
   type        = map(string)
   default     = {}
   sensitive   = true
+}
+
+variable "deletion_protection" {
+  description = "Stop Terraform from deleting the service, files and database by accident."
+  type        = bool
+  default     = true
 }

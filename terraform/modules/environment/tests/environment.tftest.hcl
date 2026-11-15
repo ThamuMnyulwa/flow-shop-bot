@@ -1,6 +1,12 @@
-# Runs with mocked providers: no Render or Neon account, no cost.  terraform test
+# Runs with mocked providers: no Google Cloud or Neon account, no cost.  terraform test
 
-mock_provider "render" {}
+mock_provider "google" {
+  mock_data "google_project" {
+    defaults = {
+      number = "123456789012"
+    }
+  }
+}
 mock_provider "neon" {
   mock_resource "neon_project" {
     defaults = {
@@ -11,8 +17,8 @@ mock_provider "neon" {
 mock_provider "random" {}
 
 variables {
-  name     = "floww-shop-test"
-  repo_url = "https://github.com/ThamuMnyulwa/flow-shop-bot"
+  name       = "floww-shop-test"
+  project_id = "floww-shop"
 }
 
 run "prod_has_no_test_features" {
@@ -20,48 +26,86 @@ run "prod_has_no_test_features" {
 
   variables {
     environment = "production"
-    branch      = "main"
-    auto_deploy = false
   }
 
   assert {
-    condition     = render_web_service.this.env_vars["FLOWSHOP_ALLOW_TIME_TRAVEL"].value == "false"
+    condition = alltrue([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env :
+      e.value == "false" if e.name == "FLOWSHOP_ALLOW_TIME_TRAVEL"
+    ])
     error_message = "The test clock must be off in production."
   }
   assert {
-    condition     = render_web_service.this.env_vars["FLOWSHOP_SEED_ON_START"].value == "false"
-    error_message = "Production must never load sample data."
+    condition     = google_cloud_run_v2_job.migrate.template[0].template[0].containers[0].args[2] == "flowshop migrate"
+    error_message = "Production deploys must never load sample data."
   }
   assert {
-    condition     = render_web_service.this.runtime_source.docker.auto_deploy == false
-    error_message = "Prod deploys only through scripts/deploy.sh."
-  }
-  assert {
-    condition     = render_web_service.this.env_vars["FLOWSHOP_ENV"].value == "production"
-    error_message = "FLOWSHOP_ENV must be production."
+    condition     = google_cloud_run_v2_service.this.deletion_protection == true
+    error_message = "Prod must be protected from accidental deletion by default."
   }
 }
 
-run "cron_and_web_share_the_jobs_token" {
+run "scales_to_zero_and_never_wakes_the_database" {
   command = apply
 
   variables {
     environment = "dev"
-    branch      = "develop"
-    auto_deploy = true
   }
 
   assert {
-    condition     = render_cron_job.jobs.env_vars["FLOWSHOP_JOBS_TOKEN"].value == render_web_service.this.env_vars["FLOWSHOP_JOBS_TOKEN"].value
-    error_message = "The jobs cron must use the web service's token."
+    condition     = google_cloud_run_v2_service.this.template[0].scaling[0].min_instance_count == 0
+    error_message = "The service should scale to zero by default."
   }
   assert {
-    condition     = render_cron_job.jobs.env_vars["FLOWSHOP_BASE_URL"].value == "https://floww-shop-test.onrender.com"
-    error_message = "The cron must call this environment's own service."
+    condition     = google_cloud_run_v2_service.this.template[0].containers[0].resources[0].cpu_idle == true
+    error_message = "CPU must only be billed while handling requests."
   }
   assert {
-    condition     = render_web_service.this.disk.mount_path == "/var/data" && render_web_service.this.env_vars["FLOWSHOP_STORAGE_DIR"].value == "/var/data/storage"
-    error_message = "Files must be stored on the disk, or they vanish on every deploy."
+    condition     = google_cloud_run_v2_service.this.template[0].containers[0].startup_probe[0].http_get[0].path == "/healthz"
+    error_message = "Probes must use /healthz, which doesn't touch the database."
+  }
+}
+
+run "secrets_stay_in_secret_manager" {
+  command = apply
+
+  variables {
+    environment = "dev"
+    secrets     = { FLOWSHOP_WA_TOKEN = "secret-token" }
+  }
+
+  assert {
+    condition = alltrue([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env :
+      length(e.value_source) == 1 && e.value == null
+      if contains(["FLOWSHOP_DATABASE_URL", "FLOWSHOP_SECRET_KEY", "FLOWSHOP_JOBS_TOKEN", "FLOWSHOP_WA_TOKEN"], e.name)
+    ])
+    error_message = "Secrets must come from Secret Manager, never plain environment values."
+  }
+  assert {
+    condition     = length(google_secret_manager_secret.this) == 5
+    error_message = "Expected the four built-in secrets plus the WhatsApp token."
+  }
+}
+
+run "scheduler_calls_this_environments_service" {
+  command = apply
+
+  variables {
+    environment = "dev"
+  }
+
+  assert {
+    condition     = google_cloud_scheduler_job.jobs.http_target[0].uri == "https://floww-shop-test-123456789012.europe-west3.run.app/jobs/run"
+    error_message = "The scheduler must call this environment's own service."
+  }
+  assert {
+    condition     = google_cloud_scheduler_job.jobs.http_target[0].headers["X-Jobs-Token"] == random_password.jobs_token.result
+    error_message = "The scheduler must send the service's jobs token."
+  }
+  assert {
+    condition     = google_storage_bucket.files.public_access_prevention == "enforced"
+    error_message = "The files bucket holds proofs of payment and must never be public."
   }
 }
 
@@ -70,8 +114,6 @@ run "rejects_unknown_environment" {
 
   variables {
     environment = "staging"
-    branch      = "develop"
-    auto_deploy = true
   }
 
   expect_failures = [var.environment]

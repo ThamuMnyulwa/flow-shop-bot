@@ -1,11 +1,36 @@
 output "url" {
-  description = "Public address of the web service."
+  description = "Public address of the service."
   value       = local.base_url
 }
 
-output "web_service_id" {
-  description = "Render service id, used by scripts/deploy.sh to trigger and watch deploys."
-  value       = render_web_service.this.id
+output "run_url" {
+  description = "Cloud Run's own address, which always works even with a custom domain."
+  value       = local.run_url
+}
+
+output "service_name" {
+  description = "Cloud Run service, updated by scripts/deploy.sh."
+  value       = google_cloud_run_v2_service.this.name
+}
+
+output "migrate_job_name" {
+  description = "Cloud Run job that runs migrations, executed by scripts/deploy.sh before each deploy."
+  value       = google_cloud_run_v2_job.migrate.name
+}
+
+output "region" {
+  description = "Google Cloud region."
+  value       = var.region
+}
+
+output "project_id" {
+  description = "Google Cloud project."
+  value       = var.project_id
+}
+
+output "files_bucket" {
+  description = "Cloud Storage bucket for photos and proofs of payment."
+  value       = google_storage_bucket.files.name
 }
 
 output "neon_project_id" {
@@ -25,7 +50,7 @@ output "admin_password" {
 }
 
 output "database_url" {
-  description = "Connection string, for running migrations or a restore by hand."
+  description = "Connection string, for a restore or a migration by hand."
   value       = neon_project.this.connection_uri
   sensitive   = true
 }

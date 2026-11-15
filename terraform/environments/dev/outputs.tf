@@ -3,18 +3,38 @@ output "url" {
   value       = module.environment.url
 }
 
-output "web_service_id" {
-  description = "Render service id, read by scripts/deploy.sh."
-  value       = module.environment.web_service_id
+output "run_url" {
+  description = "Cloud Run's own address."
+  value       = module.environment.run_url
+}
+
+output "service_name" {
+  description = "Read by scripts/deploy.sh."
+  value       = module.environment.service_name
+}
+
+output "migrate_job_name" {
+  description = "Read by scripts/deploy.sh."
+  value       = module.environment.migrate_job_name
+}
+
+output "region" {
+  description = "Read by scripts/deploy.sh."
+  value       = module.environment.region
+}
+
+output "project_id" {
+  description = "Read by scripts/deploy.sh."
+  value       = module.environment.project_id
 }
 
 output "neon_project_id" {
-  description = "Neon project id, read by scripts/deploy.sh."
+  description = "Read by scripts/deploy.sh for the pre-deploy backup."
   value       = module.environment.neon_project_id
 }
 
 output "neon_branch_id" {
-  description = "The database branch the service uses, read by scripts/deploy.sh."
+  description = "Read by scripts/deploy.sh for the pre-deploy backup."
   value       = module.environment.neon_branch_id
 }
 
