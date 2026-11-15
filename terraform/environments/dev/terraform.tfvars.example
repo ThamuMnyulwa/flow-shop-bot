@@ -1,0 +1,2 @@
+# Copy to terraform.tfvars (git-ignored) and adjust.
+cors_origins = "https://deploy-preview--floww.netlify.app"

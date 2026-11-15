@@ -7,3 +7,10 @@ var/
 .ruff_cache/
 .coverage
 .env.prod
+# Terraform: state and tfvars hold secrets
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+terraform/modules/**/.terraform.lock.hcl

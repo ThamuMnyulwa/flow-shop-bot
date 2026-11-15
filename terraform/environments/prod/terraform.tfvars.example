@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars (git-ignored) and adjust.
+cors_origins       = "https://floww.netlify.app"
+base_url           = ""            # e.g. "https://shop-api.floww.co.za" once a custom domain points at Render
+whatsapp_live      = false         # true at go-live
+wa_business_number = "27000000000"
+
+# Secrets. terraform.tfvars is never committed.
+extra_env_vars = {
+  # FLOWSHOP_WA_PHONE_ID      = ""
+  # FLOWSHOP_WA_TOKEN         = ""
+  # FLOWSHOP_WA_APP_SECRET    = ""
+  # FLOWSHOP_WA_VERIFY_TOKEN  = ""
+  # FLOWSHOP_SENTRY_DSN       = ""
+}

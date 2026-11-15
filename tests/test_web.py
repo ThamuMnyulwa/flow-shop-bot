@@ -308,7 +308,7 @@ def test_time_travel_button_releases_overdue(staff_client):
 
 
 def test_health(client):
-    assert client.get("/healthz").json() == {"ok": True}
+    assert client.get("/healthz").json() == {"ok": True, "version": ""}
 
 
 # ----- product photos -------------------------------------------------------------

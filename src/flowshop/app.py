@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -60,7 +61,8 @@ def create_app() -> FastAPI:
 
         with session_scope() as db:
             db.execute(text("SELECT 1"))
-        return {"ok": True}
+        # Render sets RENDER_GIT_COMMIT; scripts/deploy.sh checks it to confirm which commit is live.
+        return {"ok": True, "version": os.environ.get("RENDER_GIT_COMMIT", "")}
 
     return app
 
