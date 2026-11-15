@@ -77,7 +77,7 @@ wait_for_deploy() {  # wait_for_deploy <service_id> <deploy_id>
 }
 
 running_version() {  # the commit the service reports from /healthz
-  curl -sS --max-time 20 "$1/healthz" | json "d.get('version','')" 2>/dev/null || true
+  curl -s --max-time 20 "$1/healthz" 2>/dev/null | json "d.get('version','')" 2>/dev/null || true
 }
 
 verify() {  # verify <url> <sha>
@@ -143,8 +143,9 @@ deploy() {  # deploy <dev|prod>
     local dev_url dev_version
     dev_url=$(tf_out dev url)
     dev_version=$(running_version "$dev_url")
+    [[ -n $dev_version ]] || die "Dev ($dev_url) isn't reachable or doesn't report a version."
     [[ $dev_version == "$sha" ]] \
-      || die "Dev runs '${dev_version:0:7}', not ${sha:0:7}. Deploy to dev and check it there first: scripts/deploy.sh dev"
+      || die "Dev runs ${dev_version:0:7}, not ${sha:0:7}. Deploy to dev and check it there first: scripts/deploy.sh dev"
     ok "Dev runs ${sha:0:7}"
     confirm "This deploys ${sha:0:7} to PROD, where real customers order." prod
 
@@ -152,7 +153,7 @@ deploy() {  # deploy <dev|prod>
     push_fast_forward "$sha" main
 
     step "Back up the prod database"
-    [[ -n ${NEON_API_KEY:-} ]] || die "Set NEON_API_KEY for the pre-deploy backup."
+    $DRY_RUN || [[ -n ${NEON_API_KEY:-} ]] || die "Set NEON_API_KEY for the pre-deploy backup."
     local project branch name
     project=$(tf_out prod neon_project_id)
     branch=$(tf_out prod neon_branch_id)
