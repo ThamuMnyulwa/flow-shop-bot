@@ -7,7 +7,7 @@ de-duplication rule.
 import logging
 
 from pywa import WhatsApp
-from pywa.types import Button, Section, SectionList, SectionRow
+from pywa.types import Button, ImageCarouselCard, Section, SectionList, SectionRow
 from pywa.types.templates import TemplateLanguage
 
 from flowshop.channels.base import Channel, OutMessage
@@ -45,14 +45,20 @@ class WhatsAppChannel(Channel):
                 sent = self._send_buttons(to, message)
         elif message.kind == "buttons":
             sent = self._send_buttons(to, message)
-        elif message.kind == "list":
-            rows = [SectionRow(title=r.title, callback_data=r.id, description=r.description or None)
-                    for r in message.rows]
-            sent = self.client.send_message(
-                to=to, text=message.text,
-                buttons=SectionList(button_title=message.list_button,
-                                    sections=[Section(title=message.section_title, rows=rows)]),
-            )
+        elif message.kind == "carousel" and all(c.image_url.startswith("https://") for c in message.cards):
+            try:
+                sent = self.client.send_carousel(to=to, body=message.text, cards=[
+                    ImageCarouselCard(image=c.image_url, body=c.body,
+                                      buttons=[Button(title=b.title, callback_data=b.id) for b in c.buttons])
+                    for c in message.cards
+                ])
+            except Exception:
+                # Browsing must never break: send the same products as a plain list.
+                log.exception("carousel failed, sending the product list instead")
+                sent = self._send_list(to, message)
+        elif message.kind in ("list", "carousel"):
+            # A carousel's photos must be at public https addresses, which Meta fetches itself.
+            sent = self._send_list(to, message)
         elif message.kind == "template":
             body = [{"type": "text", "text": p} for p in message.template_params]
             components = [{"type": "body", "parameters": body}]
@@ -63,6 +69,15 @@ class WhatsAppChannel(Channel):
         else:
             raise ValueError(f"unknown message kind {message.kind}")
         return getattr(sent, "id", None)
+
+    def _send_list(self, to: str, message: OutMessage):
+        rows = [SectionRow(title=r.title, callback_data=r.id, description=r.description or None)
+                for r in message.rows]
+        return self.client.send_message(
+            to=to, text=message.text,
+            buttons=SectionList(button_title=message.list_button,
+                                sections=[Section(title=message.section_title, rows=rows)]),
+        )
 
     def _send_buttons(self, to: str, message: OutMessage):
         return self.client.send_message(

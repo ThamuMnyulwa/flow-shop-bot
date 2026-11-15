@@ -144,3 +144,47 @@ def test_signature():
     assert webhook.verify_signature("secret", body, good)
     assert not webhook.verify_signature("secret", body + b" ", good)
     assert not webhook.verify_signature("", body, good)  # no secret configured: refuse everything
+
+
+def carousel_message(url_prefix="https://shop.example"):
+    cards = [base.Card(f"{url_prefix}/p{i}.png", f"/p{i}.png", f"*Item {i}* · R100",
+                       (base.Button(f"add:{i}", "Add to order"),)) for i in range(2)]
+    rows = [base.Row(f"prod:{i}", f"Item {i}", "R100") for i in range(2)]
+    return base.carousel("Our products:", cards, rows)
+
+
+def test_carousel_sent_with_photo_cards(wa):
+    channel, fake = wa
+    fake.send_carousel = lambda **kw: fake.calls.append(("send_carousel", kw)) or SimpleNamespace(id="wamid.C")
+    channel.send("2782", carousel_message())
+    name, kwargs = fake.calls[0]
+    assert name == "send_carousel" and len(kwargs["cards"]) == 2
+    assert kwargs["cards"][0].image == "https://shop.example/p0.png"
+    assert kwargs["cards"][0].buttons[0].callback_data == "add:0"
+
+
+def test_carousel_falls_back_to_list(wa):
+    channel, fake = wa
+    channel.send("2782", carousel_message("http://localhost:8000"))  # Meta can't fetch these photos
+    name, kwargs = fake.calls[0]
+    assert name == "send_message" and isinstance(kwargs["buttons"], SectionList)
+
+
+def test_carousel_error_falls_back_to_list(wa):
+    channel, fake = wa
+
+    def boom(**kwargs):
+        raise RuntimeError("carousel not supported")
+
+    fake.send_carousel = boom
+    channel.send("2782", carousel_message())
+    assert fake.calls[-1][0] == "send_message"
+
+
+def test_carousel_limits():
+    card = base.Card("https://x/p.png", "/p.png", "x", (base.Button("a", "Add"),))
+    with pytest.raises(base.ChannelLimitError):
+        base.carousel("one card only", [card], [base.Row("a", "a")])
+    long = base.Card("https://x/p.png", "/p.png", "x" * 161, (base.Button("a", "Add"),))
+    with pytest.raises(base.ChannelLimitError):
+        base.carousel("too long", [long, card], [base.Row("a", "a")])

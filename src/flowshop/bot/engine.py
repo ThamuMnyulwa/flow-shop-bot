@@ -15,7 +15,17 @@ from sqlalchemy.orm import Session
 
 from flowshop import clock
 from flowshop.bot import fallback
-from flowshop.channels.base import InboundMessage, OutMessage, Row, buttons, menu_list, text
+from flowshop.channels.base import (
+    Button,
+    Card,
+    InboundMessage,
+    OutMessage,
+    Row,
+    buttons,
+    carousel,
+    menu_list,
+    text,
+)
 from flowshop.models import (
     Conversation,
     ConversationMode,
@@ -280,13 +290,27 @@ class Bot:
                       offset: int = 0) -> None:
         if not products:
             return self.say(buttons("There's nothing to show here yet.", ("menu", "Main menu")))
+        if len(products) == 1:
+            return self.product_view(products[0].id)
         self.go("browse")
         page = products[offset:offset + PAGE_SIZE] if len(products) > 10 else products
         rows = [Row(f"prod:{p.id}", p.name, f"{rand(p.price_cents)} · {catalogue.availability_label(p)}")
                 for p in page]
-        if len(products) > 10 and offset + PAGE_SIZE < len(products):
-            rows.append(Row(f"more:{category_id or ''},{offset + PAGE_SIZE}", "More products…"))
-        self.say(menu_list(intro, rows, "View products"))
+        if len(products) > 10:
+            if offset + PAGE_SIZE < len(products):
+                rows.append(Row(f"more:{category_id or ''},{offset + PAGE_SIZE}", "More products…"))
+            return self.say(menu_list(intro, rows, "View products"))
+        # Up to ten products fit a carousel: swipeable cards, each with the product's photo.
+        self.say(carousel(f"{intro} Swipe to see them all.", [self.card(p) for p in page], rows))
+
+    def card(self, p: Product) -> Card:
+        url, path = catalogue.image_or_placeholder(p)
+        body = f"*{p.name}* · {rand(p.price_cents)}\n{catalogue.availability_label(p)}\n{p.description}"
+        if len(body) > 160:
+            body = body[:159].rstrip() + "…"
+        button = (Button(f"add:{p.id}", "Add to order") if p.orderable and p.available > 0
+                  else Button(f"prod:{p.id}", "More info"))
+        return Card(image_url=url, image_path=path, body=body, buttons=(button,))
 
     def product_view(self, product_id: int) -> None:
         p = self.db.get(Product, product_id)
@@ -307,8 +331,10 @@ class Bot:
 
     def ask_quantity(self, product_id: int, replace: bool = False) -> None:
         p = self.db.get(Product, product_id)
-        if p is None or not p.orderable:
+        if p is None:
             return self.browse()
+        if not p.orderable:
+            return self.product_view(p.id)  # explains why it can't be ordered yet
         in_cart = 0 if replace else self.cart.get(p.id, 0)
         can_add = p.available - in_cart
         if can_add <= 0:

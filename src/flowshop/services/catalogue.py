@@ -62,3 +62,11 @@ def image(product: Product) -> tuple[str, str] | None:
         return None
     path = f"/api/images/{product.image_key}"
     return f"{get_settings().base_url}{path}", path
+
+
+PLACEHOLDER = "/static/product-placeholder.png"
+
+
+def image_or_placeholder(product: Product) -> tuple[str, str]:
+    """For carousel cards, where every card needs a photo: the product's own, or the FLOWW placeholder."""
+    return image(product) or (f"{get_settings().base_url}{PLACEHOLDER}", PLACEHOLDER)

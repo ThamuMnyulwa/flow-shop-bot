@@ -39,11 +39,14 @@ def test_browse_to_confirmed_order_within_ten_messages(client):
     out = c.say("hi")
     assert "Welcome to FLOWW" in texts(out)
     out = c.tap("Browse products")
-    rows = out[-1]["payload"]["rows"]  # straight to the products, no category step
-    assert [r["title"] for r in rows] == ["Headwrap", "Notebook", "Shea Butter Cream", "FLOWW Mug"]
-    assert rows[0]["title"] == "Headwrap" and "10 available" in rows[0]["description"]
-    c.tap("Headwrap")
-    c.tap("Add to order")
+    browse = out[-1]
+    assert browse["kind"] == "carousel"  # swipeable cards with photos, no category step
+    cards = browse["payload"]["cards"]
+    assert [c["body"].split(" · ")[0] for c in cards] == ["*Headwrap*", "*Notebook*", "*Shea Butter Cream*",
+                                                          "*FLOWW Mug*"]
+    assert "10 available" in cards[0]["body"] and cards[0]["image_path"]  # placeholder until a photo is uploaded
+    assert [b["title"] for b in cards[3]["buttons"]] == ["More info"]  # the mug can't be ordered yet
+    c.tap_card("Headwrap", "Add to order")
     out = c.tap("2")
     assert "Headwrap × 2: R200" in texts(out)
     out = c.tap("Checkout")
@@ -76,8 +79,23 @@ def test_website_link_starts_with_the_product(client):
 def test_search_by_name_shows_price_and_availability(client):
     c = SimCustomer(client)
     out = c.say("do you have shea butter?")
-    row = out[-1]["payload"]["rows"][0]
-    assert row["title"] == "Shea Butter Cream" and "R100" in row["description"] and "available" in row["description"]
+    # One match opens the product straight away: price, live availability and the add button.
+    assert "*Shea Butter Cream* · R100" in texts(out) and "10 available" in texts(out)
+    assert "Add to order" in [b["title"] for b in out[-1]["payload"]["buttons"]]
+
+
+def test_search_with_several_matches_shows_cards(client):
+    c = SimCustomer(client)
+    out = c.say("floww")  # the notebook and the mug both mention FLOWW
+    assert out[-1]["kind"] == "carousel" and len(out[-1]["payload"]["cards"]) == 2
+
+
+def test_more_info_on_a_launching_soon_card(client):
+    c = SimCustomer(client)
+    c.say("hi")
+    c.tap("Browse products")
+    out = c.tap_card("FLOWW Mug", "More info")
+    assert "can't take orders" in texts(out)
 
 
 def test_launching_soon_is_shown_but_not_orderable(client):
@@ -101,8 +119,7 @@ def test_edit_and_remove_items(client):
     c.tap("Add to order")
     c.tap("2")
     c.tap("Add more")
-    c.tap("Notebook")
-    c.tap("Add to order")
+    c.tap_card("Notebook", "Add to order")
     out = c.tap("1")
     assert "Products: R300" in texts(out)
     c.tap("Edit order")

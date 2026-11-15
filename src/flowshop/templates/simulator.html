@@ -31,6 +31,14 @@
   .b .btns button:last-child { border-bottom:0; }
   .b .btns button:disabled { color:var(--wa-muted); cursor:default; }
   .b.tpl { border-left:3px solid var(--wa-head); }
+  .b.wide { max-width:100%; background:none; box-shadow:none; padding:0; }
+  .b.wide > .t { padding-right:4px; }
+  .cards { display:flex; gap:10px; overflow-x:auto; padding:8px 2px 6px; scroll-snap-type:x mandatory; }
+  .card { flex:0 0 230px; background:var(--wa-in); border-radius:10px; overflow:hidden; scroll-snap-align:start;
+    box-shadow:0 1px .5px rgba(0,0,0,.13); display:flex; flex-direction:column; white-space:normal; }
+  .card img { width:100%; aspect-ratio:1/1; object-fit:cover; background:var(--wa-line); display:block; }
+  .card-body { padding:8px 10px; font-size:15px; white-space:pre-wrap; flex:1; }
+  .card button { border:0; border-top:1px solid var(--wa-line); background:none; color:var(--wa-link); padding:11px; font:inherit; font-weight:500; cursor:pointer; }
   .b .photo { display:block; width:calc(100% + 16px); max-width:none; margin:-4px -8px 8px; border-radius:8px; aspect-ratio:1/1; object-fit:cover; background:var(--wa-line); }
   .note { align-self:center; font-size:12px; background:var(--wa-in); color:var(--wa-muted); padding:4px 10px; border-radius:8px; }
   .bar { display:flex; gap:8px; padding:10px; background:var(--wa-in); align-items:center; }
@@ -106,6 +114,18 @@ function render(m) {
     const box = el("div", "btns");
     p.buttons.forEach(btn => { const x = el("button", null, btn.title); x.onclick = () => post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: btn.id, title: btn.title }); box.append(x); });
     b.append(box);
+  }
+  if (m.direction === "out" && m.kind === "carousel") {
+    const row = el("div", "cards");
+    (p.cards || []).forEach(card => {
+      const c = el("div", "card");
+      const img = el("img"); img.src = card.image_path; img.alt = ""; c.append(img);
+      c.append(el("div", "card-body", card.body.replace(/\*/g, "")));
+      card.buttons.forEach(btn => { const x = el("button", null, btn.title);
+        x.onclick = () => post("/simulator/reply", { wa_id: WA, name: NAME, reply_id: btn.id, title: btn.title }); c.append(x); });
+      row.append(c);
+    });
+    b.classList.add("wide"); b.append(row);
   }
   if (m.direction === "out" && m.kind === "list") {
     const box = el("div", "btns"), x = el("button", null, "☰ " + p.list_button);

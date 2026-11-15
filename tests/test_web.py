@@ -374,8 +374,7 @@ def test_multi_item_summary_is_text_only(staff_client):
     c.tap("Add to order")
     c.tap("1")
     c.tap("Add more")
-    c.tap("Notebook")
-    c.tap("Add to order")
+    c.tap_card("Notebook", "Add to order")
     assert c.tap("1")[-1]["payload"]["image_path"] == ""  # the notebook has no photo
     c.tap("Checkout")
     c.tap("Delivery")

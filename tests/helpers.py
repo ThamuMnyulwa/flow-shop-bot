@@ -41,6 +41,19 @@ class SimCustomer:
     def last_bot(self) -> dict:
         return [m for m in self.messages() if m["direction"] == "out"][-1]
 
+    def tap_card(self, product: str, button: str) -> list[dict]:
+        """Tap a button on one product's card in the latest carousel."""
+        for m in reversed(self.messages()):
+            if m["direction"] == "out" and m["kind"] == "carousel":
+                for card in m["payload"]["cards"]:
+                    if card["body"].startswith(f"*{product}*"):
+                        opt = next(b for b in card["buttons"] if b["title"] == button)
+                        self._post("/simulator/reply", json={"wa_id": self.wa_id, "name": self.name,
+                                                             "reply_id": opt["id"], "title": opt["title"]})
+                        return self.new_replies()
+                raise AssertionError(f"No card for {product!r}")
+        raise AssertionError("No carousel to tap")
+
     def tap(self, title: str) -> list[dict]:
         """Tap a button or list row on the bot's latest interactive message."""
         for m in reversed(self.messages()):

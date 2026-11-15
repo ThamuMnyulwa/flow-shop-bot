@@ -13,6 +13,8 @@ MAX_ROW_TITLE = 24
 MAX_ROW_DESCRIPTION = 72
 MAX_INTERACTIVE_BODY = 1024
 MAX_TEXT_BODY = 4096
+MAX_CARDS = 10
+MAX_CARD_BODY = 160
 
 
 class ChannelLimitError(ValueError):
@@ -32,9 +34,19 @@ class Row:
     description: str = ""
 
 
+@dataclass(frozen=True)
+class Card:
+    """One card in a carousel: a photo, a short text and its own reply buttons."""
+
+    image_url: str  # a public URL; WhatsApp fetches carousel photos itself
+    image_path: str  # the same photo as a site path, for the simulator and the inbox
+    body: str
+    buttons: tuple[Button, ...]
+
+
 @dataclass
 class OutMessage:
-    kind: str  # text, buttons, list, template
+    kind: str  # text, buttons, list, carousel, template
     text: str = ""
     buttons: list[Button] = field(default_factory=list)
     rows: list[Row] = field(default_factory=list)
@@ -44,6 +56,7 @@ class OutMessage:
     template_params: list[str] = field(default_factory=list)
     image_url: str = ""  # a public URL; WhatsApp shows the image above the text and buttons
     image_path: str = ""  # the same image as a site path, for the simulator and the inbox
+    cards: list[Card] = field(default_factory=list)
 
     def validate(self) -> "OutMessage":
         if self.kind == "text" and len(self.text) > MAX_TEXT_BODY:
@@ -64,6 +77,18 @@ class OutMessage:
             for r in self.rows:
                 if len(r.title) > MAX_ROW_TITLE or len(r.description) > MAX_ROW_DESCRIPTION:
                     raise ChannelLimitError(f"list row too long: {r.title!r}")
+        if self.kind == "carousel":
+            if not 2 <= len(self.cards) <= MAX_CARDS:
+                raise ChannelLimitError("carousels need 2 to 10 cards")
+            if len({len(c.buttons) for c in self.cards}) != 1:
+                raise ChannelLimitError("every carousel card needs the same number of buttons")
+            for c in self.cards:
+                if len(c.body) > MAX_CARD_BODY or c.body.count("\n") > 2:
+                    raise ChannelLimitError(f"card text too long: {c.body!r}")
+                if not 1 <= len(c.buttons) <= MAX_BUTTONS or any(len(b.title) > MAX_BUTTON_TITLE for b in c.buttons):
+                    raise ChannelLimitError("card buttons: 1 to 3, titles up to 20 characters")
+            # The list is the fallback when a carousel cannot be sent, so it must be valid too.
+            OutMessage("list", self.text, rows=self.rows, list_button=self.list_button).validate()
         return self
 
     def to_payload(self) -> dict:
@@ -74,6 +99,8 @@ class OutMessage:
             "list_button": self.list_button, "template_name": self.template_name,
             "template_params": self.template_params, "image_url": self.image_url,
             "image_path": self.image_path,
+            "cards": [{"image_url": c.image_url, "image_path": c.image_path, "body": c.body,
+                       "buttons": [{"id": b.id, "title": b.title} for b in c.buttons]} for c in self.cards],
         }
 
 
@@ -90,6 +117,11 @@ def buttons(body: str, *items: tuple[str, str], image: tuple[str, str] | None = 
 
 def menu_list(body: str, rows: list[Row], list_button: str = "Choose") -> OutMessage:
     return OutMessage("list", body, rows=rows, list_button=list_button).validate()
+
+
+def carousel(body: str, cards: list[Card], fallback_rows: list[Row], list_button: str = "View products") -> OutMessage:
+    """Swipeable product cards with photos. `fallback_rows` is the plain list sent if the carousel can't be."""
+    return OutMessage("carousel", body, cards=cards, rows=fallback_rows, list_button=list_button).validate()
 
 
 def template(name: str, params: list[str], preview: str) -> OutMessage:
