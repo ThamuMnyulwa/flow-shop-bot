@@ -1,0 +1,51 @@
+"""The WhatsApp Cloud API channel through PyWa (L1). PyWa is used for sending and media only.
+
+Webhooks are received by our own endpoint, so the simulator and WhatsApp share one parser and one
+de-duplication rule.
+"""
+
+from pywa import WhatsApp
+from pywa.types import Button, Section, SectionList, SectionRow
+from pywa.types.templates import TemplateLanguage
+
+from flowshop.channels.base import Channel, OutMessage
+from flowshop.config import Settings
+
+
+class WhatsAppChannel(Channel):
+    name = "whatsapp"
+
+    def __init__(self, settings: Settings, client: WhatsApp | None = None):
+        self.settings = settings
+        self.client = client or WhatsApp(phone_id=settings.wa_phone_id, token=settings.wa_token)
+
+    def send(self, to: str, message: OutMessage) -> str | None:
+        message.validate()
+        if message.kind == "text":
+            sent = self.client.send_message(to=to, text=message.text)
+        elif message.kind == "buttons":
+            sent = self.client.send_message(
+                to=to, text=message.text, buttons=[Button(title=b.title, callback_data=b.id) for b in message.buttons]
+            )
+        elif message.kind == "list":
+            rows = [SectionRow(title=r.title, callback_data=r.id, description=r.description or None)
+                    for r in message.rows]
+            sent = self.client.send_message(
+                to=to, text=message.text,
+                buttons=SectionList(button_title=message.list_button,
+                                    sections=[Section(title=message.section_title, rows=rows)]),
+            )
+        elif message.kind == "template":
+            body = [{"type": "text", "text": p} for p in message.template_params]
+            components = [{"type": "body", "parameters": body}]
+            sent = self.client.send_template(
+                to=to, name=message.template_name,
+                language=TemplateLanguage(self.settings.wa_template_language), params=components,
+            )
+        else:
+            raise ValueError(f"unknown message kind {message.kind}")
+        return getattr(sent, "id", None)
+
+    def fetch_media(self, media_id: str) -> tuple[bytes, str]:
+        media = self.client.get_media_url(media_id)
+        return self.client.get_media_bytes(media.url), media.mime_type
