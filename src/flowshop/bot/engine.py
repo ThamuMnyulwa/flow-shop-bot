@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 HANDOFF_WORDS = re.compile(r"\b(human|person|agent|staff|someone|consultant|talk to|speak to|call me)\b", re.I)
 GREETING_WORDS = re.compile(r"^\s*(hi|hello|hey|hallo|howzit|menu|start|sawubona|molo|dumela)\b", re.I)
 ORDER_WORDS = re.compile(r"\b(my order|order status|status|where is my order)\b", re.I)
+QUESTION = re.compile(r"\?|^\s*(is|are|do|does|can|could|will|would|how|what|when|where|which|why|who)\b", re.I)
 PAGE_SIZE = 9  # nine products and a "More" row fit WhatsApp's ten-row list
 
 
@@ -221,18 +222,30 @@ class Bot:
             return self.main_menu()
         if ORDER_WORDS.search(body):
             return self.my_order()
+        asked_ai = False
+        if fallback.enabled() and QUESTION.search(body):
+            # A real question goes to the assistant first; a bare product name is still a search.
+            asked_ai = True
+            if self.ai_answer(body):
+                return
         found = catalogue.search(self.db, body)
         if found:
             self.conv.misunderstood_count = 0
             return self.list_products(found, "Here's what I found:")
-        self.unmatched(body)
+        self.unmatched(body, asked_ai)
 
-    def unmatched(self, body: str) -> None:
-        """Every message the menus cannot handle passes through here: today staff, later the AI first."""
+    def ai_answer(self, body: str) -> bool:
         answer = fallback.answer(self.db, self.conv, body)
-        if answer is not None:
-            self.conv.misunderstood_count = 0
-            self.say(buttons(answer, ("browse", "Browse products"), ("human", "Talk to a person")))
+        if answer is None:
+            return False
+        self.conv.misunderstood_count = 0
+        self.event("ai_answer")
+        self.say(buttons(answer, ("browse", "Browse products"), ("human", "Talk to a person")))
+        return True
+
+    def unmatched(self, body: str, asked_ai: bool = False) -> None:
+        """Every message the menus cannot handle passes through here: the AI first when it is on, then staff."""
+        if not asked_ai and self.ai_answer(body):
             return
         self.conv.misunderstood_count += 1
         if self.conv.misunderstood_count >= 2:

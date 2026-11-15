@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # AI assistant (phase 5). Off unless a key is set and enabled.
     ai_enabled: bool = False
     anthropic_api_key: str = ""
-    ai_model: str = "claude-haiku-4-5-20251001"
+    ai_model: str = "claude-opus-5-5"
 
     @property
     def cors_origin_list(self) -> list[str]:

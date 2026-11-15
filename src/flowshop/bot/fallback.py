@@ -10,9 +10,13 @@ from flowshop.config import get_settings
 from flowshop.models import Conversation
 
 
-def answer(db: Session, conv: Conversation, question: str) -> str | None:
+def enabled() -> bool:
     settings = get_settings()
-    if not (settings.ai_enabled and settings.anthropic_api_key):
+    return settings.ai_enabled and bool(settings.anthropic_api_key)
+
+
+def answer(db: Session, conv: Conversation, question: str) -> str | None:
+    if not enabled():
         return None
     from flowshop.bot import assistant
 
