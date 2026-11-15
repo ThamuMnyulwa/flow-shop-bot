@@ -1,10 +1,10 @@
 # Infrastructure
 
-Everything the FLOWW shop runs on is defined here. The app runs on Google Cloud Run in London and the database on Neon, for dev and prod. Both environments live in the Google Cloud project **`oceanhub-dev`**.
+Everything the FLOWW shop runs on Google Cloud is defined here, for dev and prod. The app runs on Cloud Run in London, in the Google Cloud project **`oceanhub-dev`**. The databases are Neon projects in London, created in the Neon console. Terraform is given their connection strings and doesn't manage Neon itself.
 
 ```
 terraform/
-├── modules/environment/     one environment: Neon database, Cloud Run service + migration job, files bucket,
+├── modules/environment/     one environment: Cloud Run service + migration job, files bucket,
 │   │                        secrets, service account, scheduled jobs
 │   └── tests/               mock-provider tests: no accounts, no cost (terraform test)
 └── environments/
@@ -26,7 +26,7 @@ Terraform state is kept in the `oceanhub-dev-tfstate` bucket, under `floww-shop/
 | Secret Manager: database URL, session key, jobs token, admin password, WhatsApp keys | | ✓ | ✓ |
 | Service account with access only to its own secrets and bucket | | ✓ | ✓ |
 | Cloud Scheduler: reminders and the 48-hour release | | hourly | every 15 minutes |
-| Neon project, London, PostgreSQL | | `floww-shop-dev`, created by Terraform | `quiet-sound-91322992`, created in the Neon console |
+| Neon project, London, PostgreSQL 18, made in the Neon console | | `divine-term-51411250` | `quiet-sound-91322992` |
 
 **Images:** Terraform creates the services with a placeholder image. `scripts/deploy.sh` sets the real one, and Terraform leaves it alone afterwards.
 
@@ -36,14 +36,13 @@ Terraform state is kept in the `oceanhub-dev-tfstate` bucket, under `floww-shop/
 
 ```sh
 gcloud auth application-default login          # Terraform's Google sign-in
-export NEON_API_KEY=...                        # Neon console → Account settings → API keys
 
 cd terraform/environments/shared
 cp terraform.tfvars.example terraform.tfvars   # project_id = "oceanhub-dev"; billing_account for a budget alert
 terraform init && terraform plan && terraform apply
 
 cd ../dev
-cp terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars   # paste the dev database's POOLED string
 terraform init && terraform plan && terraform apply
 
 cd ../prod

@@ -6,10 +6,6 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 8.11"
     }
-    neon = {
-      source  = "kislerdm/neon"
-      version = "~> 0.18"
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.6"

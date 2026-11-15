@@ -21,3 +21,14 @@ variable "secrets" {
   default     = {}
   sensitive   = true
 }
+
+variable "database_url" {
+  description = "The dev Neon database's POOLED connection string (DATABASE_URL_POOLED). Set in terraform.tfvars."
+  type        = string
+  sensitive   = true
+}
+
+variable "neon_project_id" {
+  description = "The dev Neon project's id."
+  type        = string
+}

@@ -7,18 +7,13 @@ mock_provider "google" {
     }
   }
 }
-mock_provider "neon" {
-  mock_resource "neon_project" {
-    defaults = {
-      connection_uri_pooler = "postgresql://flowshop:pw@ep-x-pooler.c-2.eu-west-2.aws.neon.tech/flowshop?sslmode=require"
-    }
-  }
-}
 mock_provider "random" {}
 
 variables {
-  name       = "floww-shop-test"
-  project_id = "floww-shop"
+  name            = "floww-shop-test"
+  project_id      = "floww-shop"
+  database_url    = "postgresql://neondb_owner:pw@ep-test-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require"
+  neon_project_id = "divine-term-00000000"
 }
 
 run "prod_has_no_test_features" {
@@ -109,7 +104,7 @@ run "scheduler_calls_this_environments_service" {
   }
 }
 
-run "uses_an_existing_neon_database" {
+run "uses_the_given_neon_database" {
   command = apply
 
   variables {
@@ -119,17 +114,24 @@ run "uses_an_existing_neon_database" {
   }
 
   assert {
-    condition     = length(neon_project.this) == 0
-    error_message = "With database_url set, the module must not create a Neon project."
-  }
-  assert {
     condition     = google_secret_manager_secret_version.this["FLOWSHOP_DATABASE_URL"].secret_data == var.database_url
-    error_message = "The service must use the existing database's connection string."
+    error_message = "The service must use the given database's connection string."
   }
   assert {
     condition     = output.neon_project_id == "quiet-sound-91322992"
-    error_message = "Backups must target the existing Neon project."
+    error_message = "Backups must target this environment's Neon project."
   }
+}
+
+run "rejects_a_non_postgres_url" {
+  command = plan
+
+  variables {
+    environment  = "dev"
+    database_url = "mysql://nope"
+  }
+
+  expect_failures = [var.database_url]
 }
 
 run "rejects_unknown_environment" {

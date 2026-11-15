@@ -8,7 +8,7 @@ The app runs on **Google Cloud Run** in London and scales to zero when idle. The
 | Git branch | `develop` | `main` |
 | Deployed by | `scripts/deploy.sh dev` | `scripts/deploy.sh prod` |
 | Cloud Run service | `floww-shop-dev`, scales to zero, at most 2 instances | `floww-shop-prod`, scales to zero, at most 3 instances |
-| Database | Neon project `floww-shop-dev` (London), free plan, sample data only | Neon project `quiet-sound-91322992` (London), real data |
+| Database | Neon project `divine-term-51411250` (London), sample data only | Neon project `quiet-sound-91322992` (London), real data |
 | Scheduled jobs | Hourly | Every 15 minutes |
 | WhatsApp | Simulator, later a Meta test number | Simulator until go-live, then the business number |
 | Test clock | On | Off |

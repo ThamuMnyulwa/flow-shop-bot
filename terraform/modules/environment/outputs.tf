@@ -35,7 +35,7 @@ output "files_bucket" {
 
 output "neon_project_id" {
   description = "Neon project id, used by scripts/deploy.sh to make a backup branch before a prod deploy."
-  value       = local.neon_project_id
+  value       = var.neon_project_id
 }
 
 output "admin_password" {
@@ -46,6 +46,6 @@ output "admin_password" {
 
 output "database_url" {
   description = "Connection string, for a restore or a migration by hand."
-  value       = local.database_url
+  value       = var.database_url
   sensitive   = true
 }

@@ -1,6 +1,7 @@
-# One FLOWW shop environment on Google Cloud Run, with its database on Neon.
+# One FLOWW shop environment on Google Cloud Run. Its database is a Neon project made in the Neon console;
+# Terraform is given the connection string.
 #
-#   Neon project ──▶ DATABASE_URL secret ──▶ Cloud Run service (scales to zero) ◀── Cloud Scheduler (jobs)
+#   Neon (console) ──▶ DATABASE_URL secret ──▶ Cloud Run service (scales to zero) ◀── Cloud Scheduler (jobs)
 #                                          └▶ Cloud Run job (migrations, once per deploy)
 #   Cloud Storage bucket ◀── product photos and proof-of-payment files
 #
@@ -18,11 +19,6 @@ locals {
 
   placeholder_image = "us-docker.pkg.dev/cloudrun/container/hello"
 
-  # Either the Neon project this module creates, or an existing one passed in.
-  create_database = nonsensitive(var.database_url == "")
-  database_url    = local.create_database ? neon_project.this[0].connection_uri_pooler : var.database_url
-  neon_project_id = local.create_database ? neon_project.this[0].id : var.neon_project_id
-
   settings = merge(
     {
       FLOWSHOP_ENV               = var.environment
@@ -39,7 +35,7 @@ locals {
   # Every secret becomes a Secret Manager secret and an environment variable of the same name.
   secret_values = merge(
     {
-      FLOWSHOP_DATABASE_URL   = local.database_url
+      FLOWSHOP_DATABASE_URL   = var.database_url
       FLOWSHOP_SECRET_KEY     = random_password.secret_key.result
       FLOWSHOP_JOBS_TOKEN     = random_password.jobs_token.result
       FLOWSHOP_ADMIN_PASSWORD = random_password.admin.result
@@ -51,23 +47,6 @@ locals {
   labels = {
     app         = "floww-shop"
     environment = var.environment == "production" ? "prod" : "dev"
-  }
-}
-
-# ---------- database ----------
-
-resource "neon_project" "this" {
-  count = local.create_database ? 1 : 0
-
-  name                      = var.name
-  region_id                 = var.neon_region
-  pg_version                = 16
-  history_retention_seconds = var.database_history_seconds
-
-  branch {
-    name          = "main"
-    database_name = "flowshop"
-    role_name     = "flowshop"
   }
 }
 

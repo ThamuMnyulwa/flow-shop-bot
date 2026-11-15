@@ -19,34 +19,25 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "Google Cloud region. London sits next to Neon's London region; a WhatsApp tap runs many queries."
+  description = "Google Cloud region. London sits next to the Neon databases in London; a WhatsApp tap runs many queries."
   type        = string
   default     = "europe-west2"
 }
 
-variable "neon_region" {
-  description = "Neon region for a database this module creates. Ignored when database_url is set."
-  type        = string
-  default     = "aws-eu-west-2"
-}
-
 variable "database_url" {
-  description = "Use an existing Neon database (its pooled connection string) instead of creating a Neon project."
+  description = "The Neon database's POOLED connection string (the address with -pooler in it)."
   type        = string
-  default     = ""
   sensitive   = true
+
+  validation {
+    condition     = can(regex("^postgres(ql)?(\\+psycopg)?://", var.database_url))
+    error_message = "database_url must be a postgresql:// connection string."
+  }
 }
 
 variable "neon_project_id" {
-  description = "With database_url: the existing Neon project's id, for the backup before each prod deploy."
+  description = "The Neon project's id, used by scripts/deploy.sh for the backup before each prod deploy."
   type        = string
-  default     = ""
-}
-
-variable "database_history_seconds" {
-  description = "How far back Neon can restore the database. The free plan allows up to 6 hours; Launch up to 7 days."
-  type        = number
-  default     = 21600
 }
 
 variable "max_instances" {
