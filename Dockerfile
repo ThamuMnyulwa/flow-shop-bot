@@ -12,6 +12,8 @@ RUN uv sync --frozen --no-dev
 FROM python:3.13-slim
 RUN useradd --create-home --uid 1000 app
 WORKDIR /app
+# Local file storage lives here. Creating it as the app user means a mounted volume inherits that owner.
+RUN mkdir -p /app/var/storage && chown -R app:app /app/var
 COPY --from=build --chown=app /app/.venv /app/.venv
 COPY --chown=app src ./src
 COPY --chown=app alembic.ini ./
