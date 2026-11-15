@@ -19,15 +19,28 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "Google Cloud region. Frankfurt sits next to Neon's Frankfurt region, which keeps database calls fast."
+  description = "Google Cloud region. London sits next to Neon's London region; a WhatsApp tap runs many queries."
   type        = string
-  default     = "europe-west3"
+  default     = "europe-west2"
 }
 
 variable "neon_region" {
-  description = "Neon region for the database."
+  description = "Neon region for a database this module creates. Ignored when database_url is set."
   type        = string
-  default     = "aws-eu-central-1"
+  default     = "aws-eu-west-2"
+}
+
+variable "database_url" {
+  description = "Use an existing Neon database (its pooled connection string) instead of creating a Neon project."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "neon_project_id" {
+  description = "With database_url: the existing Neon project's id, for the backup before each prod deploy."
+  type        = string
+  default     = ""
 }
 
 variable "database_history_seconds" {

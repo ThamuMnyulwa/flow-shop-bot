@@ -49,7 +49,10 @@ The business number is never touched during this test.
 
 ## 4. Switch production
 
-1. On Render, set the same five values, with the business number's phone ID.
+1. In `terraform/environments/prod/terraform.tfvars`:
+   - set `whatsapp_live = true`
+   - put the four WhatsApp values under `secrets`, with the business number's phone ID
+   - run `terraform apply`
 2. Set `FLOWSHOP_WA_BUSINESS_NUMBER` so the website's links open the right chat.
 3. Point the webhook at `https://<production URL>/webhook`.
 4. Run a short pilot with a few real customers before announcing the number.

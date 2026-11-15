@@ -4,9 +4,9 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "Google Cloud region, next to Neon's Frankfurt region."
+  description = "Google Cloud region, next to Neon's London region."
   type        = string
-  default     = "europe-west3"
+  default     = "europe-west2"
 }
 
 variable "cors_origins" {
@@ -34,11 +34,6 @@ variable "min_instances" {
   default     = 0
 }
 
-variable "database_history_seconds" {
-  description = "Neon restore window. 21600 (6 hours) on the free plan; up to 604800 (7 days) on Launch."
-  type        = number
-  default     = 21600
-}
 
 variable "whatsapp_live" {
   description = "Switch prod from the simulator to the real WhatsApp number (docs/go-live-whatsapp.md)."
@@ -50,4 +45,15 @@ variable "wa_business_number" {
   description = "The business WhatsApp number in international form without the plus, for the website's links."
   type        = string
   default     = "27000000000"
+}
+
+variable "database_url" {
+  description = "The prod Neon database's POOLED connection string (DATABASE_URL_POOLED). Set in terraform.tfvars."
+  type        = string
+  sensitive   = true
+}
+
+variable "neon_project_id" {
+  description = "The prod Neon project's id, for the backup before each deploy."
+  type        = string
 }

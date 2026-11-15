@@ -5,9 +5,9 @@ There are two compose files:
 | File | Use | Containers |
 | --- | --- | --- |
 | `docker-compose.yml` | Your own machine | `app`, `db`, `jobs` |
-| `docker-compose.prod.yml` | A server, as an alternative to Render | `caddy`, `app`, `db`, `jobs`, `backup` |
+| `docker-compose.prod.yml` | A server, as an alternative to Google Cloud | `caddy`, `app`, `db`, `jobs`, `backup` |
 
-Both use the same image that Render runs.
+Both use the same image that Cloud Run runs.
 
 ## On your machine
 

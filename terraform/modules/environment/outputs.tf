@@ -35,12 +35,7 @@ output "files_bucket" {
 
 output "neon_project_id" {
   description = "Neon project id, used by scripts/deploy.sh to make a backup branch before a prod deploy."
-  value       = neon_project.this.id
-}
-
-output "neon_branch_id" {
-  description = "The database branch the service uses."
-  value       = neon_project.this.default_branch_id
+  value       = local.neon_project_id
 }
 
 output "admin_password" {
@@ -51,6 +46,6 @@ output "admin_password" {
 
 output "database_url" {
   description = "Connection string, for a restore or a migration by hand."
-  value       = neon_project.this.connection_uri
+  value       = local.database_url
   sensitive   = true
 }

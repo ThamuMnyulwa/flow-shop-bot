@@ -1,63 +1,70 @@
 # Infrastructure
 
-Everything the FLOWW shop runs on is defined here: the database, the servers and the scheduled jobs, for dev and prod.
+Everything the FLOWW shop runs on is defined here. The app runs on Google Cloud Run in London and the database on Neon, for dev and prod. Both environments live in the Google Cloud project **`oceanhub-dev`**.
 
 ```
 terraform/
-├── modules/environment/     one environment: Neon database, Render web service + disk, jobs cron, secrets
+├── modules/environment/     one environment: Neon database, Cloud Run service + migration job, files bucket,
+│   │                        secrets, service account, scheduled jobs
 │   └── tests/               mock-provider tests: no accounts, no cost (terraform test)
 └── environments/
-    ├── dev/                 develop branch, sample data, test clock, simulator
-    └── prod/                main branch, real data
+    ├── shared/              Google Cloud services, the image registry, an optional budget alert
+    ├── dev/                 sample data, test clock, simulator
+    └── prod/                real data
 ```
 
-Each environment has its own Neon project and its own Terraform state, so a change to dev can't touch prod.
+Terraform state is kept in the `oceanhub-dev-tfstate` bucket, under `floww-shop/<environment>`. The bucket is private and keeps old versions. The state holds secrets.
 
 ## What gets created
 
-| Resource | Dev | Prod |
-| --- | --- | --- |
-| Neon project, Frankfurt, PostgreSQL 16 | `floww-shop-dev` | `floww-shop-prod` |
-| Render web service, Docker, starter | `floww-shop-dev`, 1 GB disk | `floww-shop-prod`, 5 GB disk |
-| Render cron job, every 15 minutes | `floww-shop-dev-jobs` | `floww-shop-prod-jobs` |
-| Secrets: session key, jobs token, first admin password | generated | generated |
+| Resource | Shared | Dev | Prod |
+| --- | --- | --- | --- |
+| Artifact Registry `floww-shop` | ✓ | | |
+| Cloud Run service, 1 vCPU / 512 MB, scales to zero | | `floww-shop-dev` | `floww-shop-prod` |
+| Cloud Run job for migrations | | `floww-shop-dev-migrate` | `floww-shop-prod-migrate` |
+| Cloud Storage bucket, private | | `oceanhub-dev-floww-shop-dev-files` | `oceanhub-dev-floww-shop-prod-files` |
+| Secret Manager: database URL, session key, jobs token, admin password, WhatsApp keys | | ✓ | ✓ |
+| Service account with access only to its own secrets and bucket | | ✓ | ✓ |
+| Cloud Scheduler: reminders and the 48-hour release | | hourly | every 15 minutes |
+| Neon project, London, PostgreSQL | | `floww-shop-dev`, created by Terraform | `quiet-sound-91322992`, created in the Neon console |
 
-Deploys don't happen on git push. `scripts/deploy.sh` runs them, so every deploy is tested and verified (see [docs/deploy-render.md](../docs/deploy-render.md)).
+**Images:** Terraform creates the services with a placeholder image. `scripts/deploy.sh` sets the real one, and Terraform leaves it alone afterwards.
+
+**Shared project:** every resource is labelled `app=floww-shop`, and the budget alert counts only those, so the other apps in `oceanhub-dev` aren't included. Removing FLOWW never turns off the Google services the other apps use.
 
 ## First run
 
-1. **API keys.** Never put them in a file in git.
+```sh
+gcloud auth application-default login          # Terraform's Google sign-in
+export NEON_API_KEY=...                        # Neon console → Account settings → API keys
 
-   ```sh
-   export RENDER_API_KEY=...      # Render → Account settings → API keys
-   export RENDER_OWNER_ID=...     # Render → Workspace settings (starts with tea- or usr-)
-   export NEON_API_KEY=...        # Neon → Account settings → API keys
-   ```
+cd terraform/environments/shared
+cp terraform.tfvars.example terraform.tfvars   # project_id = "oceanhub-dev"; billing_account for a budget alert
+terraform init && terraform plan && terraform apply
 
-2. **Render access to GitHub.** Connect GitHub to Render once in the dashboard, so Render can read the repository.
+cd ../dev
+cp terraform.tfvars.example terraform.tfvars
+terraform init && terraform plan && terraform apply
 
-3. **Dev first.**
+cd ../prod
+cp terraform.tfvars.example terraform.tfvars   # paste the prod database's POOLED string after resetting its password
+terraform init && terraform plan && terraform apply
+```
 
-   ```sh
-   cd terraform/environments/dev
-   cp terraform.tfvars.example terraform.tfvars   # edit if needed
-   terraform init
-   terraform plan          # read it
-   terraform apply
-   terraform output -raw admin_password           # sign in as admin@floww.local
-   ```
+Then deploy with `scripts/deploy.sh dev` and `scripts/deploy.sh prod` (see [docs/deploy.md](../docs/deploy.md)).
 
-4. **Then prod**, the same way, in `terraform/environments/prod`. Prod starts empty. After the first deploy, create the products and admin from the Render shell:
+## Moving prod to its own project later
 
-   ```sh
-   flowshop seed --no-orders     # FLOWSHOP_ADMIN_PASSWORD is already set by Terraform
-   ```
+Recommended before real customers. `oceanhub-dev` is a development project shared with other apps, and prod holds personal information under POPIA.
+
+1. Create a project, for example `floww-shop-prod`, and link billing to it.
+2. In `environments/prod`, set `project_id` to the new project, and set the backend bucket to a state bucket in that project.
+3. Let prod's Cloud Run service agent read images from the shared registry. Grant `roles/artifactregistry.reader` to `service-<prod project number>@serverless-robot-prod.iam.gserviceaccount.com` on the `floww-shop` repository.
+4. Run `terraform apply`, then `scripts/deploy.sh prod`.
 
 ## Changing infrastructure
 
-Edit the module or an environment, then run `terraform plan` and `terraform apply` in that environment. Do dev first.
-
-Before pushing, check:
+Edit the module or an environment, then run `terraform plan` and `terraform apply` in that environment. Do dev before prod. Before pushing, check:
 
 ```sh
 terraform fmt -recursive
@@ -66,7 +73,12 @@ terraform fmt -recursive
 
 ## Things to know
 
-- **State holds secrets**: the database password and the generated keys. It stays on your machine (`terraform.tfstate`, git-ignored). Back it up. If more than one person will run Terraform, move it to a remote backend; see `versions.tf`.
-- **The service address** is assumed to be `https://<name>.onrender.com`. If Render gives a different address, because the name is taken, set `base_url` in `terraform.tfvars`.
-- **Neon's free plan** pauses an idle database, and keeps up to 6 hours of history for restores. Before go-live, consider the paid plan for prod, and raise `database_history_seconds`.
-- **Not yet applied against real accounts.** `terraform validate` and the mock tests pass against the providers' real schemas: render-oss/render 1.9, kislerdm/neon 0.18.
+- **Deletion protection:** prod has it on for the service and job, and the files bucket isn't force-deleted. Dev has it off, so it can be rebuilt freely.
+- **Scheduler token:** Cloud Scheduler sends the jobs token in the `X-Jobs-Token` header, so it's visible to anyone who can view Scheduler jobs in the project. It only allows triggering the reminders and the 48-hour release, nothing else.
+- **Neon's free plan** suspends idle compute and keeps 6 hours of history. Prod's database was created in the Neon console, so its plan, restore window and settings are managed there, not by Terraform. Put it on Launch before go-live, with a 7-day restore window.
+- **The prod database password** lives in `terraform.tfvars`, which isn't committed. It's also in Terraform state, in the private state bucket, and in Secret Manager. To change it, reset it in Neon, update `terraform.tfvars`, run `terraform apply`, then redeploy.
+- **Neon Auth** is turned on in the prod Neon project but not used. Staff sign in through the app, and customers are identified by their WhatsApp number. It can be switched off in the Neon console.
+- **Tested so far:**
+  - `terraform validate` and the mock tests pass against Google provider 8.11 and Neon provider 0.18.
+  - `terraform plan` for `shared` against `oceanhub-dev` shows 8 additions and nothing changed or deleted.
+  - Nothing has been applied yet.

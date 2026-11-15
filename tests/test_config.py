@@ -29,3 +29,16 @@ def test_environment_banner():
             assert "test data" not in c.get("/admin/login").text
     finally:
         settings.env = original
+
+
+def test_prepared_statements_off_through_neon_pooler(monkeypatch):
+    from flowshop import db
+
+    seen = {}
+    monkeypatch.setattr(db, "create_engine", lambda url, **kw: seen.setdefault(url, kw))
+    pooled = "postgresql+psycopg://u:p@ep-x-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require"
+    direct = "postgresql+psycopg://u:p@ep-x.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require"
+    db._make_engine(pooled)
+    db._make_engine(direct)
+    assert seen[pooled]["connect_args"] == {"prepare_threshold": None}
+    assert seen[direct]["connect_args"] == {}

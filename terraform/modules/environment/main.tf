@@ -18,6 +18,11 @@ locals {
 
   placeholder_image = "us-docker.pkg.dev/cloudrun/container/hello"
 
+  # Either the Neon project this module creates, or an existing one passed in.
+  create_database = nonsensitive(var.database_url == "")
+  database_url    = local.create_database ? neon_project.this[0].connection_uri_pooler : var.database_url
+  neon_project_id = local.create_database ? neon_project.this[0].id : var.neon_project_id
+
   settings = merge(
     {
       FLOWSHOP_ENV               = var.environment
@@ -34,7 +39,7 @@ locals {
   # Every secret becomes a Secret Manager secret and an environment variable of the same name.
   secret_values = merge(
     {
-      FLOWSHOP_DATABASE_URL   = neon_project.this.connection_uri_pooler
+      FLOWSHOP_DATABASE_URL   = local.database_url
       FLOWSHOP_SECRET_KEY     = random_password.secret_key.result
       FLOWSHOP_JOBS_TOKEN     = random_password.jobs_token.result
       FLOWSHOP_ADMIN_PASSWORD = random_password.admin.result
@@ -52,6 +57,8 @@ locals {
 # ---------- database ----------
 
 resource "neon_project" "this" {
+  count = local.create_database ? 1 : 0
+
   name                      = var.name
   region_id                 = var.neon_region
   pg_version                = 16

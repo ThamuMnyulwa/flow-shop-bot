@@ -8,9 +8,11 @@ terraform {
     }
   }
 
-  # State stays on this machine (git-ignored). Move to a GCS backend once more than one person runs Terraform.
-  backend "local" {
-    path = "terraform.tfstate"
+  # State lives in the project's Terraform bucket, in its own folder per environment. It holds secrets, so only
+  # people with access to that bucket can read it. Create the bucket first if a new project doesn't have one.
+  backend "gcs" {
+    bucket = "oceanhub-dev-tfstate"
+    prefix = "floww-shop/shared"
   }
 }
 

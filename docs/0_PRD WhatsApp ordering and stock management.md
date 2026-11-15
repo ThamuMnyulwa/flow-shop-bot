@@ -317,7 +317,7 @@ Every change is run and tested on the developer's own machine first, then on the
 
 **Hosting proposal**
 
-The choice is Render for the service and Neon for PostgreSQL, at roughly $7 a month to start. Neon's database branching gives staging a copy of the data at no extra cost. The website stays on Netlify and calls the service over HTTPS, so the two do not need to sit together. Customer data does not have to stay in South Africa, so Frankfurt is acceptable.
+The choice is Google Cloud Run for the service and Neon for PostgreSQL, both in London, and both scale to zero when idle. That costs about $10–15 a month for dev and prod together. It was cheaper than Render with Neon (about $27–30), because Render charges a flat rate for always-on services, while this traffic fits inside Cloud Run's free monthly allowance. The trade-off is a first reply that is 2–5 seconds slower after a quiet spell. One always-on instance, for about $10–14 a month, removes that. The website stays on Netlify and calls the service over HTTPS. Customer data does not have to stay in South Africa, so London is acceptable. The app must sit in the same region as the database, because a WhatsApp tap runs several queries.
 
 Neon's free plan pauses an idle database, and the first request after a pause is slow. That can break the 5-second response target, so production either uses a plan that stays awake or has a scheduled ping.
 
@@ -327,7 +327,7 @@ The service is packaged as one container image and uses plain PostgreSQL, so the
 
 | Target | Service runs on | Database | South African region | Database cost, compute only | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Render with Neon (proposal) | Render web service | Neon PostgreSQL | None found; Frankfurt is nearest | Free plan to start | Simplest and cheapest. Data sits outside South Africa. |
+| Render with Neon | Render web service | Neon PostgreSQL | None found; Frankfurt is nearest | Free plan to start | Simple, but a flat monthly rate for always-on services. Not chosen. |
 | Google Cloud | Cloud Run | Cloud SQL for PostgreSQL | Johannesburg (africa-south1) | About $26 a month for the small shared instance | Cloud Run has a monthly free allowance and can scale to zero. |
 | AWS | Amazon ECS Express Mode | Amazon RDS for PostgreSQL | Cape Town (af-south-1), not verified for Express Mode | Not yet priced | App Runner closed to new customers on 30 April 2026, and AWS points new projects to ECS Express Mode. |
 | Azure | Azure Container Apps | Azure Database for PostgreSQL flexible server | South Africa North (Johannesburg); verified for the database only | About $16 a month for the B1ms burstable instance | Container Apps availability in the region still needs a check. |
@@ -426,7 +426,7 @@ Running costs are close to zero until go-live, and small after it. The software 
 
 - [x] An order with proof of payment never expires. An order without proof releases its stock at 48 hours but stays open for a late payment.
 - [x] There is one shared collection code, which staff change on the admin page when needed.
-- [x] Customer data does not have to stay in South Africa, so production uses Render with Neon.
+- [x] Customer data does not have to stay in South Africa. Production runs on Google Cloud Run with Neon, both in London, scaling to zero (decided 15 November 2026, after comparing Render, all-Google and BigQuery options).
 - [x] The existing website is hosted on Netlify, and its repository will be brought in later.
 
 ## Sources

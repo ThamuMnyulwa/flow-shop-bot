@@ -6,7 +6,7 @@ variable "project_id" {
 variable "region" {
   description = "Google Cloud region for the image registry, next to the services."
   type        = string
-  default     = "europe-west3"
+  default     = "europe-west2"
 }
 
 variable "billing_account" {

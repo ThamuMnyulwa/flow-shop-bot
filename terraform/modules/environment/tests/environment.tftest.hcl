@@ -10,7 +10,7 @@ mock_provider "google" {
 mock_provider "neon" {
   mock_resource "neon_project" {
     defaults = {
-      connection_uri_pooler = "postgresql://flowshop:pw@ep-x-pooler.eu-central-1.aws.neon.tech/flowshop?sslmode=require"
+      connection_uri_pooler = "postgresql://flowshop:pw@ep-x-pooler.c-2.eu-west-2.aws.neon.tech/flowshop?sslmode=require"
     }
   }
 }
@@ -96,7 +96,7 @@ run "scheduler_calls_this_environments_service" {
   }
 
   assert {
-    condition     = google_cloud_scheduler_job.jobs.http_target[0].uri == "https://floww-shop-test-123456789012.europe-west3.run.app/jobs/run"
+    condition     = google_cloud_scheduler_job.jobs.http_target[0].uri == "https://floww-shop-test-123456789012.europe-west2.run.app/jobs/run"
     error_message = "The scheduler must call this environment's own service."
   }
   assert {
@@ -106,6 +106,29 @@ run "scheduler_calls_this_environments_service" {
   assert {
     condition     = google_storage_bucket.files.public_access_prevention == "enforced"
     error_message = "The files bucket holds proofs of payment and must never be public."
+  }
+}
+
+run "uses_an_existing_neon_database" {
+  command = apply
+
+  variables {
+    environment     = "production"
+    database_url    = "postgresql://neondb_owner:pw@ep-console-made-pooler.c-2.eu-west-2.aws.neon.tech/neondb?sslmode=require"
+    neon_project_id = "quiet-sound-91322992"
+  }
+
+  assert {
+    condition     = length(neon_project.this) == 0
+    error_message = "With database_url set, the module must not create a Neon project."
+  }
+  assert {
+    condition     = google_secret_manager_secret_version.this["FLOWSHOP_DATABASE_URL"].secret_data == var.database_url
+    error_message = "The service must use the existing database's connection string."
+  }
+  assert {
+    condition     = output.neon_project_id == "quiet-sound-91322992"
+    error_message = "Backups must target the existing Neon project."
   }
 }
 

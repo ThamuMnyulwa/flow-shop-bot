@@ -4,9 +4,9 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "Google Cloud region, next to Neon's Frankfurt region."
+  description = "Google Cloud region, next to Neon's London region."
   type        = string
-  default     = "europe-west3"
+  default     = "europe-west2"
 }
 
 variable "cors_origins" {

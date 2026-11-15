@@ -33,11 +33,6 @@ output "neon_project_id" {
   value       = module.environment.neon_project_id
 }
 
-output "neon_branch_id" {
-  description = "Read by scripts/deploy.sh for the pre-deploy backup."
-  value       = module.environment.neon_branch_id
-}
-
 output "admin_password" {
   description = "Password for admin@floww.local: terraform output -raw admin_password"
   value       = module.environment.admin_password

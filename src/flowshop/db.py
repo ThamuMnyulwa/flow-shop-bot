@@ -15,10 +15,17 @@ _engine = None
 _SessionLocal: sessionmaker[Session] | None = None
 
 
+def _make_engine(url: str):
+    # Neon's pooled address runs PgBouncer in transaction mode, where a prepared statement made on one server
+    # connection may be missing on the next. psycopg prepares repeated queries by default, so turn that off there.
+    connect_args = {"prepare_threshold": None} if "-pooler." in url else {}
+    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+
+
 def get_engine():
     global _engine, _SessionLocal
     if _engine is None:
-        _engine = create_engine(get_settings().database_url, pool_pre_ping=True)
+        _engine = _make_engine(get_settings().database_url)
         _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
     return _engine
 
@@ -28,7 +35,7 @@ def reset_engine(url: str | None = None) -> None:
     global _engine, _SessionLocal
     if _engine is not None:
         _engine.dispose()
-    _engine = create_engine(url or get_settings().database_url, pool_pre_ping=True)
+    _engine = _make_engine(url or get_settings().database_url)
     _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
 
 

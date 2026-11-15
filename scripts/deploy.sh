@@ -11,7 +11,7 @@
 #           --yes          don't ask for confirmation (for CI)
 #
 # Needs: git, curl, python3, terraform, gcloud, docker (dev only), uv (dev only).
-# Sign in once: gcloud auth login && gcloud auth configure-docker europe-west3-docker.pkg.dev
+# Sign in once: gcloud auth login && gcloud auth configure-docker europe-west2-docker.pkg.dev
 # For prod: export NEON_API_KEY=... (for the backup before each deploy).
 # Names and ids come from `terraform output` in terraform/environments/{shared,dev,prod}.
 
@@ -174,17 +174,17 @@ deploy_prod() {
   push_fast_forward "$sha" main
 
   step "Back up the prod database"
-  local project branch name
+  # With no parent given, Neon branches from the project's default branch, which is the one prod uses.
+  local project name
   project=$(tf_out prod neon_project_id)
-  branch=$(tf_out prod neon_branch_id)
   name="backup-$(date -u +%Y%m%d-%H%M%S)-${sha:0:7}"
   if $DRY_RUN; then
-    printf '  [dry run] POST %s/projects/%s/branches  name=%s parent=%s\n' "$NEON_API" "$project" "$name" "$branch"
+    printf '  [dry run] POST %s/projects/%s/branches  name=%s (from the default branch)\n' "$NEON_API" "$project" "$name"
   else
     [[ -n ${NEON_API_KEY:-} ]] || die "Set NEON_API_KEY for the pre-deploy backup."
     curl -sS --fail-with-body -X POST "$NEON_API/projects/$project/branches" \
       -H "Authorization: Bearer $NEON_API_KEY" -H "Content-Type: application/json" \
-      -d "{\"branch\": {\"name\": \"$name\", \"parent_id\": \"$branch\"}}" >/dev/null \
+      -d "{\"branch\": {\"name\": \"$name\"}}" >/dev/null \
       || die "The backup failed, so nothing was deployed."
     ok "Backup branch $name"
   fi
